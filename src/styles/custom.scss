@@ -1,0 +1,43 @@
+// Bootstrap + tema
+@import "bootstrap/scss/functions";
+
+// Paleta (puedes ajustarla para un look “Booking-like” pero original)
+$primary: #0a58ca; // azul propio
+$secondary: #f5b700; // acento
+$body-font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+$enable-rounded: true;
+$btn-border-radius: 0.65rem;
+$card-border-radius: 1rem;
+
+@import "bootstrap/scss/bootstrap";
+
+// Utilidades extra
+.hero {
+  background: linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,.35)),
+              url('/assets/hero.jpg') center/cover no-repeat;
+  color: #fff;
+  padding: 5rem 0;
+}
+.result-thumb { object-fit: cover; height: 180px; }
+
+.badge.bg-light.text-dark.border {
+  border-color: #e9ecef !important;
+  font-weight: 500;
+}
+
+.floating-cart {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  width: clamp(240px, 60vw, 320px);
+  transform: translateY(150%);
+  opacity: 0;
+  transition: all .25s ease;
+  z-index: 1070; // debajo del toast (1080) pero sobre el resto
+  border-radius: 999px;
+}
+.floating-cart.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+.result-thumb { background: #f8f9fa; }

@@ -1,0 +1,32 @@
+# UniBooking (Frontend MVC)
+
+## Scripts
+- `npm i`
+- `npm run dev` – desarrollo
+- `npm run build` – producción (genera `/dist`)
+- `npm run preview` – sirve el build en `http://localhost:4173`
+
+## Configuración (.env)
+Crea un `.env` en la raíz (no se sube al repo) a partir de `.env.example`:
+
+VITE_USE_MOCK=1
+VITE_ESB_BASE_URL=http://localhost:8080/soap
+
+
+## Arquitectura (MVC)
+- **controllers/**: orquestan la vista y los servicios
+- **views/**: render de UI (DOM)
+- **services/**: lógica de negocio y acceso (adapters: `mock`/`esb`)
+- **components/**: UI reutilizable (Header, FiltersSidebar, ResultCard…)
+- **core/**: utilidades (router, http SOAP, money, toast)
+
+## Integración con ESB
+- `services/adapters/esb.adapter.ts`: construir envelope SOAP y parsear respuesta.
+- Cambia `VITE_USE_MOCK=0` y `VITE_ESB_BASE_URL` cuando el backend esté listo.
+
+## Criterios del documento
+- Búsqueda + filtros (tipo/precio/ciudad/rating/sort)
+- Estado vacío y “Limpiar filtros”
+- Detalle por tipo (hotel/auto/vuelo)
+- Carrito (inc/dec/del) + badge + floating total
+- MVC y adaptador para SOAP listo para integrar
