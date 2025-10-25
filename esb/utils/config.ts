@@ -13,8 +13,10 @@ export interface ESBConfig {
   endpoints: {
     hotel: EndpointConfig;
     car: EndpointConfig;
+    cuencaCar: EndpointConfig;
     flight: EndpointConfig;
     restaurant: EndpointConfig;
+    cafeteria: EndpointConfig;
     package: EndpointConfig;
   };
   database: {
@@ -49,6 +51,12 @@ export const defaultConfig: ESBConfig = {
       timeout: 30000,
       enabled: true
     },
+    cuencaCar: {
+      url: 'http://wscuencaarriendoautos.runasp.net/WS_IntegracionServicioAUTOS.asmx',
+      namespace: 'http://arriendoautos.com/integracion',
+      timeout: 30000,
+      enabled: true
+    },
     flight: {
       url: 'http://localhost:8083/flight-service',
       namespace: 'http://booking.esb/flight',
@@ -56,8 +64,14 @@ export const defaultConfig: ESBConfig = {
       enabled: true
     },
     restaurant: {
-      url: 'http://localhost:8084/restaurant-service',
-      namespace: 'http://booking.esb/restaurant',
+      url: 'http://sanctumcortejo.runasp.net/Ws_IntegracionRestaurante.asmx',
+      namespace: 'http://sanctumcortejo.ec/Integracion',
+      timeout: 30000,
+      enabled: true
+    },
+    cafeteria: {
+      url: 'https://cafeteriaparis-c4d5ghhbfqe2fkfs.canadacentral-01.azurewebsites.net/integracion.asmx',
+      namespace: 'http://cafeteria.com/integracion',
       timeout: 30000,
       enabled: true
     },

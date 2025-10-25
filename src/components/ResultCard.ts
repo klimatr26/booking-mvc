@@ -9,16 +9,19 @@ export function ResultCard(r: SearchResult, onAdd: () => void) {
   const img =
     r.kind === "hotel" ? (r.item as any).photo
     : r.kind === "car"   ? (r.item as any).photo
+    : r.kind === "restaurant" ? (r.item as any).photo
     : "/assets/flight.jpg";
 
   const title =
     r.kind === "hotel" ? (r.item as any).name
     : r.kind === "car"   ? `${(r.item as any).brand} ${(r.item as any).model}`
+    : r.kind === "restaurant" ? (r.item as any).name
     : `${(r.item as any).from} → ${(r.item as any).to}`;
 
   const price =
     r.kind === "hotel" ? (r.item as any).price
     : r.kind === "car"   ? (r.item as any).pricePerDay
+    : r.kind === "restaurant" ? (r.item as any).price
     : (r.item as any).price;
 
   // Badges por tipo
@@ -33,6 +36,11 @@ export function ResultCard(r: SearchResult, onAdd: () => void) {
     const c: any = r.item;
     if (c.unlimitedKm) badges.push("KM ilimitados");
     if (c.automatic)   badges.push("Automático");
+  } else if (r.kind === "restaurant") {
+    const rest: any = r.item;
+    badges.push(rest.cuisine || "Internacional");
+    badges.push(rest.city);
+    if (rest.rating >= 4.5) badges.push(`⭐ ${rest.rating.toFixed(1)}`);
   } else if (r.kind === "flight") {
     const f: any = r.item;
     badges.push(f.nonstop ? "Directo" : "Con escalas");
@@ -43,27 +51,34 @@ export function ResultCard(r: SearchResult, onAdd: () => void) {
     <img src="${img}" class="card-img-top result-thumb" alt="thumb" />
     <div class="card-body d-flex flex-column">
       <h5 class="card-title">${title}</h5>
-      <p class="card-text text-muted mb-2">${r.kind.toUpperCase()}</p>
+      <p class="card-text text-muted mb-2">
+        ${r.kind === "restaurant" ? 
+          `<span class="badge bg-warning text-dark"><i class="bi bi-shop"></i> RESTAURANTE</span>` :
+          r.kind.toUpperCase()
+        }
+      </p>
       ${
         badges.length
           ? `<div class="mb-2 d-flex flex-wrap gap-2">
                ${badges.map((b) =>
-                 `<span class="badge bg-light text-dark border">${b}</span>`
+                 `<span class="badge ${r.kind === "restaurant" ? "bg-warning" : "bg-light"} text-dark border">${b}</span>`
                ).join("")}
              </div>`
           : ""
       }
       <div class="mt-auto d-flex justify-content-between align-items-center">
-        <span class="fw-bold">${fmtUSD(price)}</span>
+        <span class="fw-bold ${r.kind === "restaurant" ? "text-warning" : ""}">${fmtUSD(price)}</span>
         <div class="d-flex gap-2">
           ${
             r.kind === "hotel"
               ? `<a href="#/hotel?id=${(r.item as any).id}" class="btn btn-outline-secondary btn-sm">Ver</a>`
               : r.kind === "car"
               ? `<a href="#/car?id=${(r.item as any).id}" class="btn btn-outline-secondary btn-sm">Ver</a>`
+              : r.kind === "restaurant"
+              ? `<a href="#/restaurant?id=${(r.item as any).id}" class="btn btn-outline-warning btn-sm">Ver</a>`
               : `<a href="#/flight?id=${(r.item as any).id}" class="btn btn-outline-secondary btn-sm">Ver</a>`
           }
-          <button class="btn btn-primary btn-sm">Agregar</button>
+          <button class="btn btn-${r.kind === "restaurant" ? "warning" : "primary"} btn-sm">Agregar</button>
         </div>
       </div>
     </div>`;

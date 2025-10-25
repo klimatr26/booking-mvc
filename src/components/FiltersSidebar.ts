@@ -4,6 +4,7 @@ const KIND_LABEL: Record<ServiceKind, string> = {
   hotel: "Hoteles",
   car: "Autos",
   flight: "Vuelos",
+  restaurant: "Restaurantes",
 };
 
 export function FiltersSidebar(initial: FilterState, onChange: (f: FilterState) => void) {
@@ -20,10 +21,12 @@ export function FiltersSidebar(initial: FilterState, onChange: (f: FilterState) 
 
     <div class="mb-3">
       <div class="fw-semibold small text-muted mb-1">Tipo</div>
-      ${(["hotel","car","flight"] as ServiceKind[]).map(k => `
+      ${(["hotel","car","flight","restaurant"] as ServiceKind[]).map(k => `
         <div class="form-check">
           <input class="form-check-input" type="checkbox" value="${k}" id="k-${k}" ${f.kinds.includes(k) ? "checked":""}/>
-          <label class="form-check-label" for="k-${k}">${KIND_LABEL[k]}</label>
+          <label class="form-check-label" for="k-${k}">
+            ${k === "restaurant" ? `<span class="text-warning">🍽️ ${KIND_LABEL[k]}</span>` : KIND_LABEL[k]}
+          </label>
         </div>`).join("")}
     </div>
 
@@ -35,16 +38,16 @@ export function FiltersSidebar(initial: FilterState, onChange: (f: FilterState) 
         <span class="input-group-text">—</span>
         <input type="number" class="form-control" placeholder="máx" id="priceMax" value="${f.priceMax ?? ""}">
       </div>
-      <div class="form-text">Para autos es por día.</div>
+      <div class="form-text">Para autos: precio por día | Restaurantes: por persona</div>
     </div>
 
     <div class="mb-3">
-      <div class="fw-semibold small text-muted mb-1">Ciudad (Hoteles)</div>
+      <div class="fw-semibold small text-muted mb-1">Ciudad (Hoteles y Restaurantes)</div>
       <input class="form-control form-control-sm" id="city" placeholder="Quito, Cuenca..." value="${f.city ?? ""}">
     </div>
 
     <div class="mb-3">
-      <div class="fw-semibold small text-muted mb-1">Rating mínimo (Hoteles)</div>
+      <div class="fw-semibold small text-muted mb-1">Rating mínimo (Hoteles y Restaurantes)</div>
       <input type="range" class="form-range" min="0" max="5" step="0.5" id="ratingMin" value="${f.ratingMin ?? 0}">
       <div class="d-flex justify-content-between small">
         <span>0</span><span id="ratingVal">${f.ratingMin ?? 0}</span><span>5</span>
@@ -66,12 +69,12 @@ export function FiltersSidebar(initial: FilterState, onChange: (f: FilterState) 
 
   // === clear para uso interno y externo ===
   function clear() {
-    f.kinds = ["hotel","car","flight"];
+    f.kinds = ["hotel","car","flight","restaurant"];
     f.priceMin = f.priceMax = undefined;
     f.city = undefined;
     f.ratingMin = 0;
     f.sort = undefined;
-    (["hotel","car","flight"] as ServiceKind[]).forEach(k => (el.querySelector(`#k-${k}`) as HTMLInputElement).checked = true);
+    (["hotel","car","flight","restaurant"] as ServiceKind[]).forEach(k => (el.querySelector(`#k-${k}`) as HTMLInputElement).checked = true);
     (el.querySelector("#priceMin") as HTMLInputElement).value = "";
     (el.querySelector("#priceMax") as HTMLInputElement).value = "";
     (el.querySelector("#city") as HTMLInputElement).value = "";

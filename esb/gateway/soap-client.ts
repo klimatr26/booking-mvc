@@ -42,7 +42,7 @@ export class SoapClient {
 
     try {
       const response = await this.axiosInstance.post('', soapEnvelope, config);
-      const doc = parseSoapResponse(response.data);
+      const doc = await parseSoapResponse(response.data);
 
       // Verificar si hay un SOAP Fault
       if (hasSoapFault(doc)) {

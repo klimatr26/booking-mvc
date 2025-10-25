@@ -1,7 +1,8 @@
-import type { FilterState, SearchResult, Hotel, Car, Flight } from "../../models/types";
+import type { FilterState, SearchResult, Hotel, Car, Flight, Restaurant } from "../../models/types";
 import { mockSearch } from "./mock.adapter";
 import ESB from "../../../esb";
 import type { FiltrosBusqueda, Servicio } from "../../../esb";
+import { getRestaurants } from "./restaurant.adapter";
 
 /**
  * Adaptador del ESB para el frontend booking-mvc
@@ -12,18 +13,26 @@ export async function esbSearch(query: string, filters?: FilterState): Promise<S
   try {
     // Convertir filtros del frontend al formato del ESB
     const filtrosESB: FiltrosBusqueda = {
-      serviceType: filters?.kinds || ['hotel', 'car', 'flight'],
+      serviceType: filters?.kinds || ['hotel', 'car', 'flight', 'restaurant'],
       ciudad: filters?.city,
       precioMin: filters?.priceMin,
       precioMax: filters?.priceMax,
       clasificacion: filters?.ratingMin
     };
 
-    // Llamar al ESB
+    // Llamar al ESB para hoteles, vuelos y autos
     const servicios = await ESB.buscarServicios(filtrosESB);
 
     // Convertir resultados del ESB al formato del frontend
     const resultados = convertirServiciosAResultados(servicios);
+
+    // Si se incluyen restaurantes en el filtro, buscarlos también
+    if (!filters?.kinds || filters.kinds.includes('restaurant')) {
+      const restaurantes = await getRestaurants(query);
+      restaurantes.forEach(r => {
+        resultados.push({ kind: 'restaurant', item: r });
+      });
+    }
 
     // Aplicar filtrado adicional por query de texto
     if (query) {
@@ -42,6 +51,11 @@ export async function esbSearch(query: string, filters?: FilterState): Promise<S
           const car = r.item as Car;
           return car.brand.toLowerCase().includes(searchText) ||
                  car.model.toLowerCase().includes(searchText);
+        } else if (r.kind === 'restaurant') {
+          const restaurant = r.item as Restaurant;
+          return restaurant.name.toLowerCase().includes(searchText) ||
+                 restaurant.city.toLowerCase().includes(searchText) ||
+                 restaurant.cuisine.toLowerCase().includes(searchText);
         }
         return false;
       });

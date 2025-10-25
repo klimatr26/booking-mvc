@@ -11,6 +11,7 @@ import { mountFloatingCart } from "./components/FloatingCart";
 import { HotelDetailController } from "./controllers/HotelDetailController";
 import { CarDetailController } from "./controllers/CarDetailController";
 import { FlightDetailController } from "./controllers/FlightDetailController";
+import { RestaurantDetailController } from "./controllers/RestaurantDetailController";
 
 export const router = new Router();
 
@@ -27,7 +28,7 @@ router.register("/results", ResultsController);
 router.register("/cart", CartController);
 router.register("/profile", ProfileController as any);
 router.register("/hotel", HotelDetailController); 
-router.register("/hotel", HotelDetailController);
 router.register("/car", CarDetailController);
 router.register("/flight", FlightDetailController);
+router.register("/restaurant", RestaurantDetailController);
 router.register("*", () => { document.getElementById("view")!.innerHTML = `<div class="container py-5">404</div>`; });

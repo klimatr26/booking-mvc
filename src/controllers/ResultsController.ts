@@ -34,7 +34,7 @@ export function ResultsController() {
   mount.innerHTML = `<div class="container py-4"><div class="row">${skeletonGrid(6)}</div></div>`;
 
   const initial: FilterState = {
-    kinds: ["hotel", "car", "flight"],
+    kinds: ["hotel", "car", "flight", "restaurant"],
     priceMin: undefined,
     priceMax: undefined,
     ratingMin: 0,

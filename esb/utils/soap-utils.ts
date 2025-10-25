@@ -35,6 +35,18 @@ export function xmlStringToDate(xmlDate: string): Date {
 }
 
 /**
+ * Construye un envelope SOAP 1.1 con el body proporcionado
+ */
+export function buildSoapEnvelope(body: string): string {
+  return `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    ${body}
+  </soap:Body>
+</soap:Envelope>`;
+}
+
+/**
  * Genera un envelope SOAP genérico
  */
 export function createSoapEnvelope(
@@ -55,10 +67,24 @@ export function createSoapEnvelope(
 
 /**
  * Parsea una respuesta SOAP y extrae el body
+ * Soporta tanto navegador (browser) como Node.js
  */
-export function parseSoapResponse(xmlString: string): Document {
-  const parser = new DOMParser();
-  return parser.parseFromString(xmlString, 'text/xml');
+export async function parseSoapResponse(xmlString: string): Promise<Document> {
+  // Detectar si estamos en Node.js o en navegador
+  if (typeof DOMParser !== 'undefined') {
+    // Navegador
+    const parser = new DOMParser();
+    return parser.parseFromString(xmlString, 'text/xml');
+  } else {
+    // Node.js - usar xmldom
+    try {
+      const xmldom = await import('@xmldom/xmldom');
+      const parser = new xmldom.DOMParser();
+      return parser.parseFromString(xmlString, 'text/xml');
+    } catch (error) {
+      throw new Error('No se pudo parsear XML. Instala @xmldom/xmldom para Node.js');
+    }
+  }
 }
 
 /**

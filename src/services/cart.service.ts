@@ -20,6 +20,10 @@ export function toCartItem(r: SearchResult): CartItem {
     const c: any = r.item;
     return { kind: "car", id: c.id, title: `${c.brand} ${c.model}`, qty: 1, price: c.pricePerDay, photo: c.photo };
   }
+  if (r.kind === "restaurant") {
+    const rest: any = r.item;
+    return { kind: "restaurant", id: rest.id, title: rest.name, subtitle: `${rest.cuisine} • ${rest.city}`, qty: 1, price: rest.price, photo: rest.photo };
+  }
   const f: any = r.item;
   return { kind: "flight", id: f.id, title: `${f.from} → ${f.to}`, subtitle: f.airline, qty: 1, price: f.price };
 }
@@ -29,6 +33,13 @@ export function addFromResult(r: SearchResult) {
   const id = (r.item as any).id;
   const found = cart.find(it => it.kind === r.kind && it.id === id);
   if (found) found.qty += 1; else cart.push(toCartItem(r));
+  saveCart(cart);
+}
+
+export function add(item: CartItem) {
+  const cart = getCart();
+  const found = cart.find(it => it.kind === item.kind && it.id === item.id);
+  if (found) found.qty += item.qty; else cart.push(item);
   saveCart(cart);
 }
 
