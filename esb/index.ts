@@ -44,6 +44,8 @@ import { HotelBoutiqueSoapAdapter } from './gateway/hotel-boutique.adapter';
 import { AutosRentCarSoapAdapter } from './gateway/autos-rentcar.adapter';
 import { KM25MadridHotelSoapAdapter } from './gateway/km25madrid-hotel.adapter';
 import { RealCuencaHotelSoapAdapter } from './gateway/real-cuenca-hotel.adapter';
+import { EasyCarSoapAdapter } from './gateway/easy-car.adapter';
+import { BackendCuencaSoapAdapter } from './gateway/backend-cuenca.adapter';
 import { getESBConfig } from './utils/config';
 import type { FiltrosBusqueda } from './models/dtos';
 import type { Usuario, Reserva, Pago } from './models/entities';
@@ -65,6 +67,8 @@ const hotelBoutiqueSoapAdapter = new HotelBoutiqueSoapAdapter(config.endpoints.h
 const autosRentCarSoapAdapter = new AutosRentCarSoapAdapter(config.endpoints.autosRentCar);
 const km25MadridSoapAdapter = new KM25MadridHotelSoapAdapter(config.endpoints.km25Madrid);
 const realCuencaSoapAdapter = new RealCuencaHotelSoapAdapter(config.endpoints.realCuenca);
+const easyCarSoapAdapter = new EasyCarSoapAdapter(config.endpoints.easyCar);
+const backendCuencaSoapAdapter = new BackendCuencaSoapAdapter(config.endpoints.backendCuenca);
 
 export const ESB = {
   // ==================== Búsqueda e Integración ====================
@@ -596,6 +600,98 @@ export const ESB = {
      */
     seleccionarEspaciosDetalladosConFiltro: (ubicacion: string, hotel: string, fechaInicio: Date, fechaFin: Date, pagina: number, tamanoPagina: number) =>
       realCuencaSoapAdapter.seleccionarEspaciosDetalladosConFiltro(ubicacion, hotel, fechaInicio, fechaFin, pagina, tamanoPagina)
+  },
+
+  // ==================== Servicio Easy Car (100% Funcional) ====================
+  
+  easyCar: {
+    /**
+     * Busca vehículos disponibles con filtros
+     */
+    buscarServicios: (categoria?: string, transmision?: string, minPrecio?: number, maxPrecio?: number) =>
+      easyCarSoapAdapter.buscarServicios(categoria, transmision, minPrecio, maxPrecio),
+    
+    /**
+     * Obtiene detalle de un vehículo
+     */
+    obtenerDetalleVehiculo: (idVehiculo: string) =>
+      easyCarSoapAdapter.obtenerDetalleVehiculo(idVehiculo),
+    
+    /**
+     * Verifica disponibilidad de un vehículo
+     */
+    verificarDisponibilidad: (idVehiculo: string, fechaInicio: Date, fechaFin: Date) =>
+      easyCarSoapAdapter.verificarDisponibilidad(idVehiculo, fechaInicio, fechaFin),
+    
+    /**
+     * Cotiza alquiler de vehículo
+     */
+    cotizarAlquiler: (idVehiculo: string, fechaInicio: Date, fechaFin: Date) =>
+      easyCarSoapAdapter.cotizarAlquiler(idVehiculo, fechaInicio, fechaFin),
+    
+    /**
+     * Crea pre-reserva
+     */
+    crearPreReserva: (idVehiculo: string, idCliente: string, fechaInicio: Date, fechaFin: Date, holdMinutes: number) =>
+      easyCarSoapAdapter.crearPreReserva(idVehiculo, idCliente, fechaInicio, fechaFin, holdMinutes),
+    
+    /**
+     * Confirma reserva
+     */
+    confirmarReserva: (preBookingId: string, metodoPago: string, datosPago: any) =>
+      easyCarSoapAdapter.confirmarReserva(preBookingId, metodoPago, datosPago),
+    
+    /**
+     * Cancela reserva
+     */
+    cancelarReserva: (bookingId: string, motivo: string) =>
+      easyCarSoapAdapter.cancelarReserva(bookingId, motivo)
+  },
+
+  // ==================== Servicio Backend Cuenca (100% Funcional) ====================
+  
+  backendCuenca: {
+    /**
+     * Busca paquetes turísticos con filtros
+     */
+    buscarServicios: (minPrecio?: number, maxPrecio?: number) =>
+      backendCuencaSoapAdapter.buscarServicios({ minPrecio, maxPrecio }),
+    
+    /**
+     * Obtiene detalle de un paquete turístico
+     */
+    obtenerDetalleServicio: (idServicio: string) =>
+      backendCuencaSoapAdapter.obtenerDetalleServicio(idServicio),
+    
+    /**
+     * Verifica disponibilidad de un paquete
+     */
+    verificarDisponibilidad: (idServicio: string, fecha: Date, unidades: number) =>
+      backendCuencaSoapAdapter.verificarDisponibilidad(idServicio, fecha, unidades),
+    
+    /**
+     * Cotiza reserva de paquete turístico
+     */
+    cotizarReserva: (items: any[]) =>
+      backendCuencaSoapAdapter.cotizarReserva(items),
+    
+    /**
+     * Crea pre-reserva
+     */
+    crearPreReserva: (itinerario: any[], cliente: any, holdMinutes: number, idemKey: string) =>
+      backendCuencaSoapAdapter.crearPreReserva(itinerario, cliente, holdMinutes, idemKey),
+    
+    /**
+     * Confirma reserva
+     */
+    confirmarReserva: (preBookingId: string, datosPago: any) =>
+      backendCuencaSoapAdapter.confirmarReserva(preBookingId, datosPago),
+    
+    /**
+     * Cancela reserva
+     */
+    cancelarReservaIntegracion: (bookingId: string, motivo: string) =>
+      backendCuencaSoapAdapter.cancelarReservaIntegracion(bookingId, motivo)
   }
 };
 

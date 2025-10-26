@@ -26,6 +26,7 @@ export function mountHeader() {
       <div class="collapse navbar-collapse" id="nav">
         <ul class="navbar-nav ms-auto align-items-lg-center">
           <li class="nav-item"><a class="nav-link" href="#/results">Buscar</a></li>
+          <li class="nav-item"><a class="nav-link" href="#/cars"><i class="bi bi-car-front-fill"></i> Arriendo de Autos</a></li>
           <li class="nav-item">
             <a class="nav-link position-relative" href="#/cart">
               Carrito

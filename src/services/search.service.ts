@@ -1,12 +1,42 @@
 import type { FilterState, SearchResult, ServiceKind } from "../models/types";
 import { mockSearch } from "./adapters/mock.adapter";
-import { esbSearch } from "./adapters/esb.adapter";
+import { esbSearch, esbSearchEasyCar, esbSearchBackendCuenca, esbSearchCarCompany } from "./adapters/esb.adapter";
 
 const USE_ESB = import.meta.env.VITE_USE_ESB === "true";
 
 export async function searchAll(query: string, filters?: FilterState): Promise<SearchResult[]> {
   const results = USE_ESB ? await esbSearch(query, filters) : await mockSearch(query);
   return applyFilters(results, filters);
+}
+
+export async function searchEasyCar(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchEasyCar(filters);
+}
+
+export async function searchBackendCuenca(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchBackendCuenca(filters);
+}
+
+export async function searchCuencaCar(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchCarCompany("cuencaCar", filters);
+}
+
+export async function searchRentCar(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchCarCompany("autosRentCar", filters);
+}
+
+export async function searchRentaAutosMadrid(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchCarCompany("rentaAutosMadrid", filters);
+}
+
+export async function searchAlquilerAugye(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchCarCompany("alquilerAugye", filters);
 }
 
 function priceOf(r: SearchResult): number {

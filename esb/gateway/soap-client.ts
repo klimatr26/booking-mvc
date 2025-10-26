@@ -26,6 +26,66 @@ export class SoapClient {
   }
 
   /**
+   * Ejecuta una llamada SOAP vía proxy (para el navegador)
+   */
+  private async callViaProxy(soapEnvelope: string, soapAction?: string): Promise<Document> {
+    try {
+      console.log('[SOAP Client] 🌐 Usando proxy para evitar CORS...');
+      
+      // Detectar si estamos en desarrollo o producción
+      const isDevelopment = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+      
+      // URL del proxy según el entorno
+      const proxyUrl = isDevelopment 
+        ? 'http://localhost:3001/api/proxy/easycar'  // Desarrollo: Express local
+        : '/.netlify/functions/soap-proxy';           // Producción: Netlify Function
+      
+      console.log('[SOAP Client] Entorno:', isDevelopment ? 'Desarrollo' : 'Producción');
+      console.log('[SOAP Client] Proxy URL:', proxyUrl);
+      
+      const response = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'SOAPAction': soapAction || ''
+        },
+        body: soapEnvelope
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const responseText = await response.text();
+      console.log('[SOAP Client] ✅ Respuesta recibida del proxy');
+      
+      const doc = await parseSoapResponse(responseText);
+
+      // Verificar si hay un SOAP Fault
+      if (hasSoapFault(doc)) {
+        const faultMessage = getSoapFaultMessage(doc);
+        logger.error('SOAP Fault recibido', { message: faultMessage });
+        throw new Error(`SOAP Fault: ${faultMessage}`);
+      }
+
+      logger.info('Respuesta SOAP recibida exitosamente vía proxy');
+      return doc;
+
+    } catch (error: any) {
+      console.error('[SOAP Client] ❌ Error en proxy:', error);
+      throw new Error(`Error en llamada vía proxy: ${error.message}`);
+    }
+  }
+
+  /**
+   * Detecta si está ejecutándose en el navegador
+   */
+  private isBrowser(): boolean {
+    return typeof window !== 'undefined' && typeof document !== 'undefined';
+  }
+
+  /**
    * Ejecuta una llamada SOAP
    */
   async call(soapEnvelope: string, soapAction?: string): Promise<Document> {
@@ -35,6 +95,12 @@ export class SoapClient {
 
     logger.info(`Llamada SOAP a ${this.endpoint.url}`, { soapAction });
 
+    // Si estamos en el navegador, usar el proxy
+    if (this.isBrowser()) {
+      return this.callViaProxy(soapEnvelope, soapAction);
+    }
+
+    // Si estamos en Node.js, llamada directa
     const config: AxiosRequestConfig = {};
     if (soapAction) {
       config.headers = { 'SOAPAction': soapAction };
