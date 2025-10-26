@@ -38,6 +38,12 @@ import { usuarioService, reservaService, pagoService } from './bll';
 import { restaurantSoapAdapter } from './gateway';
 import { CafeteriaSoapAdapter } from './gateway/cafeteria.adapter';
 import { CuencaCarRentalSoapAdapter } from './gateway/cuenca-car.adapter';
+import { SkyAndesFlightSoapAdapter } from './gateway/skyandes.adapter';
+import { ElCangrejoFelizSoapAdapter } from './gateway/cangrejo-feliz.adapter';
+import { HotelBoutiqueSoapAdapter } from './gateway/hotel-boutique.adapter';
+import { AutosRentCarSoapAdapter } from './gateway/autos-rentcar.adapter';
+import { KM25MadridHotelSoapAdapter } from './gateway/km25madrid-hotel.adapter';
+import { RealCuencaHotelSoapAdapter } from './gateway/real-cuenca-hotel.adapter';
 import { getESBConfig } from './utils/config';
 import type { FiltrosBusqueda } from './models/dtos';
 import type { Usuario, Reserva, Pago } from './models/entities';
@@ -53,6 +59,12 @@ import type {
 const config = getESBConfig();
 const cafeteriaSoapAdapter = new CafeteriaSoapAdapter(config.endpoints.cafeteria);
 const cuencaCarSoapAdapter = new CuencaCarRentalSoapAdapter(config.endpoints.cuencaCar);
+const skyandesSoapAdapter = new SkyAndesFlightSoapAdapter(config.endpoints.skyandes);
+const cangrejoFelizSoapAdapter = new ElCangrejoFelizSoapAdapter(config.endpoints.cangrejoFeliz);
+const hotelBoutiqueSoapAdapter = new HotelBoutiqueSoapAdapter(config.endpoints.hotelBoutique);
+const autosRentCarSoapAdapter = new AutosRentCarSoapAdapter(config.endpoints.autosRentCar);
+const km25MadridSoapAdapter = new KM25MadridHotelSoapAdapter(config.endpoints.km25Madrid);
+const realCuencaSoapAdapter = new RealCuencaHotelSoapAdapter(config.endpoints.realCuenca);
 
 export const ESB = {
   // ==================== Búsqueda e Integración ====================
@@ -272,6 +284,318 @@ export const ESB = {
      */
     cancelar: (bookingId: string, motivo: string) =>
       cuencaCarSoapAdapter.cancelarReservaIntegracion(bookingId, motivo)
+  },
+
+  // ==================== SkyAndes - Vuelos ====================
+  skyandes: {
+    /**
+     * Busca vuelos disponibles por origen, destino, fecha y cabina
+     */
+    buscarServicios: (originId: number, destinationId: number, fecha: Date, cabinClass: string) =>
+      skyandesSoapAdapter.buscarServicios(originId, destinationId, fecha, cabinClass),
+    
+    /**
+     * Obtiene el detalle completo de un vuelo
+     */
+    obtenerDetalle: (idServicio: number) =>
+      skyandesSoapAdapter.obtenerDetalleServicio(idServicio),
+    
+    /**
+     * Valida la disponibilidad de asientos para un vuelo
+     */
+    verificarDisponibilidad: (sku: number, inicio: Date, fin: Date, unidades: number) =>
+      skyandesSoapAdapter.verificarDisponibilidad(sku, inicio, fin, unidades),
+    
+    /**
+     * Calcula el total estimado (impuestos y promo) para una reserva de vuelo
+     */
+    cotizar: (flightId: number, passengers: number) =>
+      skyandesSoapAdapter.cotizarReserva(flightId, passengers),
+    
+    /**
+     * Crea una pre-reserva temporal de vuelo
+     */
+    crearPreReserva: (userId: number, flightId: number, holdMinutes: number, idemKey: string) =>
+      skyandesSoapAdapter.crearPreReserva(userId, flightId, holdMinutes, idemKey),
+    
+    /**
+     * Confirma reserva de vuelo y registra pago
+     */
+    confirmarReserva: (preBookingId: number, metodoPago: string, monto: number, datosPago: string) =>
+      skyandesSoapAdapter.confirmarReserva(preBookingId, metodoPago, monto, datosPago),
+    
+    /**
+     * Cancela una reserva de vuelo y marca el pago como Refunded
+     */
+    cancelar: (bookingId: number, motivo: string) =>
+      skyandesSoapAdapter.cancelarReserva(bookingId, motivo)
+  },
+
+  // ==================== El Cangrejo Feliz - Restaurante 🦀 ====================
+  cangrejoFeliz: {
+    /**
+     * Búsqueda unificada por tipo, ciudad, fechas, precio, amenities, clasificación
+     */
+    buscarServicios: (filtros?: string) =>
+      cangrejoFelizSoapAdapter.buscarServicios(filtros),
+    
+    /**
+     * Detalle completo del servicio (fotos, políticas, reglas)
+     */
+    obtenerDetalle: (idServicio: number) =>
+      cangrejoFelizSoapAdapter.obtenerDetalleServicio(idServicio),
+    
+    /**
+     * Valida cupo/stock por fechas
+     */
+    verificarDisponibilidad: (sku: number, inicio: Date, fin: Date, unidades: number) =>
+      cangrejoFelizSoapAdapter.verificarDisponibilidad(sku, inicio, fin, unidades),
+    
+    /**
+     * Calcula precio total (impuestos/fees) para un itinerario
+     */
+    cotizar: (items: any[]) =>
+      cangrejoFelizSoapAdapter.cotizarReserva(items),
+    
+    /**
+     * Bloquea disponibilidad temporalmente
+     */
+    crearPreReserva: (itinerario: string, cliente: string, holdMinutes: number, idemKey: string) =>
+      cangrejoFelizSoapAdapter.crearPreReserva(itinerario, cliente, holdMinutes, idemKey),
+    
+    /**
+     * Confirma y emite la reserva
+     */
+    confirmarReserva: (preBookingId: string, metodoPago: string, datosPago: string) =>
+      cangrejoFelizSoapAdapter.confirmarReserva(preBookingId, metodoPago, datosPago),
+    
+    /**
+     * Cancela con reglas tarifarias
+     */
+    cancelar: (bookingId: string, motivo: string) =>
+      cangrejoFelizSoapAdapter.cancelarReserva(bookingId, motivo)
+  },
+
+  // ==================== Hotel Boutique Paris 🏨 ====================
+  hotelBoutique: {
+    /**
+     * Búsqueda unificada por ciudad, fechas, precio, amenities, clasificación
+     */
+    buscarServicios: (ciudad?: string, inicio?: Date, fin?: Date, precioMin?: number, precioMax?: number, amenities?: string) =>
+      hotelBoutiqueSoapAdapter.buscarServicios(ciudad, inicio, fin, precioMin, precioMax, amenities),
+    
+    /**
+     * Devuelve el detalle completo de un servicio/habitación
+     */
+    obtenerDetalle: (idServicio: number) =>
+      hotelBoutiqueSoapAdapter.obtenerDetalleServicio(idServicio),
+    
+    /**
+     * Verifica la disponibilidad de una habitación por fechas
+     */
+    verificarDisponibilidad: (sku: number, inicio: Date, fin: Date, unidades: number) =>
+      hotelBoutiqueSoapAdapter.verificarDisponibilidad(sku, inicio, fin, unidades),
+    
+    /**
+     * Calcula el total de una reserva (precio + impuestos)
+     */
+    cotizar: (roomIds: number[]) =>
+      hotelBoutiqueSoapAdapter.cotizarReserva(roomIds),
+    
+    /**
+     * Crea una pre-reserva temporal que expira automáticamente
+     */
+    crearPreReserva: (roomId: number, userId: number, holdMinutes: number) =>
+      hotelBoutiqueSoapAdapter.crearPreReserva(roomId, userId, holdMinutes),
+    
+    /**
+     * Confirma una pre-reserva y la convierte en reserva final
+     */
+    confirmarReserva: (preBookingId: string, metodoPago: string, datosPago: string) =>
+      hotelBoutiqueSoapAdapter.confirmarReserva(preBookingId, metodoPago, datosPago),
+    
+    /**
+     * Cancela una reserva confirmada con reglas tarifarias
+     */
+    cancelar: (bookingId: string, motivo: string) =>
+      hotelBoutiqueSoapAdapter.cancelarReserva(bookingId, motivo)
+  },
+
+  // ==================== Autos RentCar 🚗 ====================
+  autosRentCar: {
+    /**
+     * Búsqueda unificada por filtros avanzados
+     */
+    buscarServicios: (filtros?: any) =>
+      autosRentCarSoapAdapter.buscarServicios(filtros),
+    
+    /**
+     * Detalle completo del auto (marca, modelo, imágenes, políticas)
+     */
+    obtenerDetalle: (idServicio: number) =>
+      autosRentCarSoapAdapter.obtenerDetalleServicio(idServicio),
+    
+    /**
+     * Valida disponibilidad por fechas
+     */
+    verificarDisponibilidad: (sku: number, inicio: Date, fin: Date, unidades: number) =>
+      autosRentCarSoapAdapter.verificarDisponibilidad(sku, inicio, fin, unidades),
+    
+    /**
+     * Calcula precio total (impuestos/fees)
+     */
+    cotizar: (items: any[]) =>
+      autosRentCarSoapAdapter.cotizarReserva(items),
+    
+    /**
+     * Crea pre-reserva y bloquea temporalmente
+     */
+    crearPreReserva: (itinerario: any[], clienteId: number, holdMinutes: number, idemKey: string, pickupAt: Date, dropoffAt: Date, autoId: number) =>
+      autosRentCarSoapAdapter.crearPreReserva(itinerario, clienteId, holdMinutes, idemKey, pickupAt, dropoffAt, autoId),
+    
+    /**
+     * Confirma y emite reserva
+     */
+    confirmarReserva: (preBookingId: string, metodoPago: string, datosPago: any) =>
+      autosRentCarSoapAdapter.confirmarReserva(preBookingId, metodoPago, datosPago),
+    
+    /**
+     * Cancela con reglas tarifarias
+     */
+    cancelar: (bookingId: string, motivo: string) =>
+      autosRentCarSoapAdapter.cancelarReserva(bookingId, motivo)
+  },
+
+  // ==================== 🏨 KM25 Madrid Hotel ====================
+  
+  /**
+   * KM25 Madrid Hotel - 8 operaciones
+   * URL: http://km25madrid.runasp.net/Services/HotelService.asmx
+   * Namespace: http://mio.hotel/booking
+   */
+  km25Madrid: {
+    /**
+     * Busca hoteles por nombre/ciudad, precio o fecha
+     */
+    buscarServicios: (filtros?: { filtro?: string; precio?: number; fecha?: Date }) =>
+      km25MadridSoapAdapter.buscarServicios(filtros),
+    
+    /**
+     * Obtiene detalle completo del hotel
+     */
+    obtenerDetalleServicio: (idHotel: number) =>
+      km25MadridSoapAdapter.obtenerDetalleServicio(idHotel),
+    
+    /**
+     * Verifica disponibilidad de habitación
+     */
+    verificarDisponibilidad: (idHabitacion: number, fechaInicio: Date, fechaFin: Date) =>
+      km25MadridSoapAdapter.verificarDisponibilidad({ idHabitacion, fechaInicio, fechaFin }),
+    
+    /**
+     * Calcula costo total con impuestos
+     */
+    cotizarReserva: (idHabitacion: number, fechaInicio: Date, fechaFin: Date) =>
+      km25MadridSoapAdapter.cotizarReserva({ idHabitacion, fechaInicio, fechaFin }),
+    
+    /**
+     * Crea pre-reserva (estado PENDIENTE)
+     */
+    crearPreReserva: (idCliente: number, idHabitacion: number, fechaCheckin: Date, fechaCheckout: Date) =>
+      km25MadridSoapAdapter.crearPreReserva({ idCliente, idHabitacion, fechaCheckin, fechaCheckout }),
+    
+    /**
+     * Confirma reserva con pago
+     */
+    confirmarReserva: (idReserva: number, idMetodoPago: number) =>
+      km25MadridSoapAdapter.confirmarReserva({ idReserva, idMetodoPago }),
+    
+    /**
+     * Cancela reserva y libera disponibilidad
+     */
+    cancelarReservaIntegracion: (bookingId: number, motivo?: string) =>
+      km25MadridSoapAdapter.cancelarReservaIntegracion({ bookingId, motivo }),
+    
+    /**
+     * Obtiene factura de la reserva
+     */
+    obtenerFactura: (idReserva: number) =>
+      km25MadridSoapAdapter.obtenerFactura(idReserva)
+  },
+
+  // ==================== 🏨 Real de Cuenca Hotel ====================
+  
+  /**
+   * Real de Cuenca Hotel - 11 operaciones
+   * URL: https://realdecuencaintegracion-abachrhfgzcrb0af.canadacentral-01.azurewebsites.net/WS_GestionIntegracionDetalleEspacio.asmx
+   * Namespace: http://tempuri.org/
+   */
+  realCuenca: {
+    /**
+     * Busca espacios disponibles con filtros
+     */
+    buscarServicios: (ubicacion?: string, hotel?: string, fechaInicio?: Date, fechaFin?: Date) =>
+      realCuencaSoapAdapter.buscarServicios(ubicacion, hotel, fechaInicio, fechaFin),
+    
+    /**
+     * Obtiene espacio por ID
+     */
+    seleccionarEspacioDetalladoPorId: (id: number) =>
+      realCuencaSoapAdapter.seleccionarEspacioDetalladoPorId(id),
+    
+    /**
+     * Verifica disponibilidad de espacio
+     */
+    verificarDisponibilidad: (espacioId: number, fechaInicio: Date, fechaFin: Date) =>
+      realCuencaSoapAdapter.verificarDisponibilidad(espacioId, fechaInicio, fechaFin),
+    
+    /**
+     * Cotiza reserva con detalles
+     */
+    cotizarReserva: (espacioId: number, checkIn: Date, checkOut: Date) =>
+      realCuencaSoapAdapter.cotizarReserva(espacioId, checkIn, checkOut),
+    
+    /**
+     * Crea pre-reserva con bloqueo temporal
+     */
+    crearPreReserva: (espacioId: number, usuarioId: number, checkIn: Date, checkOut: Date, holdMinutes: number) =>
+      realCuencaSoapAdapter.crearPreReserva(espacioId, usuarioId, checkIn, checkOut, holdMinutes),
+    
+    /**
+     * Confirma reserva con pago
+     */
+    confirmarReserva: (preBookingId: string, metodoPago: string, datosPago: string) =>
+      realCuencaSoapAdapter.confirmarReserva(preBookingId, metodoPago, datosPago),
+    
+    /**
+     * Cancela reserva
+     */
+    cancelarReservaIntegracion: (bookingId: string, motivo: string) =>
+      realCuencaSoapAdapter.cancelarReservaIntegracion(bookingId, motivo),
+    
+    /**
+     * Obtiene catálogo de hoteles
+     */
+    obtenerHoteles: () =>
+      realCuencaSoapAdapter.obtenerHoteles(),
+    
+    /**
+     * Obtiene catálogo de ubicaciones
+     */
+    obtenerUbicaciones: () =>
+      realCuencaSoapAdapter.obtenerUbicaciones(),
+    
+    /**
+     * Búsqueda paginada de espacios
+     */
+    seleccionarEspaciosDetalladosPorPaginas: (pagina: number, tamanoPagina: number) =>
+      realCuencaSoapAdapter.seleccionarEspaciosDetalladosPorPaginas(pagina, tamanoPagina),
+    
+    /**
+     * Búsqueda con filtros y paginación
+     */
+    seleccionarEspaciosDetalladosConFiltro: (ubicacion: string, hotel: string, fechaInicio: Date, fechaFin: Date, pagina: number, tamanoPagina: number) =>
+      realCuencaSoapAdapter.seleccionarEspaciosDetalladosConFiltro(ubicacion, hotel, fechaInicio, fechaFin, pagina, tamanoPagina)
   }
 };
 
