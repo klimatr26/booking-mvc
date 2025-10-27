@@ -52,17 +52,34 @@ export async function CompanyCarSearchController(app: HTMLElement, companyId: st
       
       let results: SearchResult[] = [];
 
-      // Por ahora solo Easy Car está completamente integrado
-      if (company === "easycar") {
-        console.log(`[CompanyCarSearchController] Llamando a searchEasyCar...`);
-        results = await searchService.searchEasyCar(filters);
-        console.log(`[CompanyCarSearchController] ✅ Respuesta recibida: ${results.length} resultados`);
-      } else {
-        // Para otras empresas, mostrar mensaje
-        console.log(`[CompanyCarSearchController] ⚠️ Empresa ${company} aún no integrada`);
-        results = [];
+      // Llamar al servicio correspondiente según la empresa
+      switch (company) {
+        case "easycar":
+          console.log(`[CompanyCarSearchController] Llamando a searchEasyCar...`);
+          results = await searchService.searchEasyCar(filters);
+          break;
+        case "cuencacar":
+          console.log(`[CompanyCarSearchController] Llamando a searchCuencaCar...`);
+          results = await searchService.searchCuencaCar(filters);
+          break;
+        case "rentcar":
+          console.log(`[CompanyCarSearchController] Llamando a searchRentCar...`);
+          results = await searchService.searchRentCar(filters);
+          break;
+        case "rentaautosmadrid":
+          console.log(`[CompanyCarSearchController] Llamando a searchRentaAutosMadrid...`);
+          results = await searchService.searchRentaAutosMadrid(filters);
+          break;
+        case "alquileraugye":
+          console.log(`[CompanyCarSearchController] Llamando a searchAlquilerAugye...`);
+          results = await searchService.searchAlquilerAugye(filters);
+          break;
+        default:
+          console.log(`[CompanyCarSearchController] ⚠️ Empresa ${company} no reconocida`);
+          results = [];
       }
       
+      console.log(`[CompanyCarSearchController] ✅ Respuesta recibida: ${results.length} resultados`);
       console.log(`[CompanyCarSearchController] Actualizando vista con ${results.length} vehículos`);
       
       // Update view

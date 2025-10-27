@@ -14,14 +14,14 @@ const CAR_COMPANIES: CarCompany[] = [
     description: "Servicio premium de alquiler con flota moderna. Incluye seguros y asistencia 24/7. ✅ 100% Funcional",
     status: "100%",
     functional: true,
-    vehicles: 8 // Aproximado
+    vehicles: 8
   },
   {
     id: "cuencacar",
     name: "Cuenca Car Rental",
     description: "Alquiler de vehículos en Cuenca. Opciones económicas y flexibles. (En integración)",
     status: "87.5%",
-    functional: false, // Temporalmente deshabilitado hasta completar integración frontend
+    functional: false,
     vehicles: 5
   },
   {
@@ -29,7 +29,7 @@ const CAR_COMPANIES: CarCompany[] = [
     name: "Autos RentCar",
     description: "Empresa de alquiler con amplia cobertura nacional. (En integración)",
     status: "75%",
-    functional: false, // Temporalmente deshabilitado
+    functional: false,
     vehicles: 12
   },
   {
@@ -37,8 +37,16 @@ const CAR_COMPANIES: CarCompany[] = [
     name: "Renta Autos Madrid",
     description: "Servicio español de alquiler. Vehículos europeos de calidad. (En integración)",
     status: "75%",
-    functional: false, // Temporalmente deshabilitado
+    functional: false,
     vehicles: 10
+  },
+  {
+    id: "alquileraugye",
+    name: "Alquiler Augye",
+    description: "Servicio de renta de autos con opciones personalizadas. (En integración)",
+    status: "62.5%",
+    functional: false,
+    vehicles: 8
   }
 ];
 

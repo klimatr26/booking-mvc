@@ -39,6 +39,103 @@ export async function searchAlquilerAugye(filters?: any): Promise<SearchResult[]
   return await esbSearchCarCompany("alquilerAugye", filters);
 }
 
+// ==================== HOTELES ====================
+
+export async function searchHotelCR(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Hotel CR aún no implementado');
+  return [];
+}
+
+export async function searchCuencaHotels(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Cuenca Hotels aún no implementado');
+  return [];
+}
+
+export async function searchMadrid25(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Madrid 25 aún no implementado');
+  return [];
+}
+
+export async function searchKM25Madrid(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] KM25 Madrid aún no implementado');
+  return [];
+}
+
+export async function searchPetFriendly(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Pet Friendly Hotels aún no implementado');
+  return [];
+}
+
+// ==================== RESTAURANTES ====================
+
+export async function searchRestaurantGH(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Restaurant GH aún no implementado');
+  return [];
+}
+
+export async function searchMadrFood(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] MadrFood aún no implementado');
+  return [];
+}
+
+export async function searchFoodKM25(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Food KM25 aún no implementado');
+  return [];
+}
+
+export async function searchCuencaFood(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Cuenca Food aún no implementado');
+  return [];
+}
+
+// ==================== VUELOS/AEROLÍNEAS ====================
+
+export async function searchMadridAir25(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Madrid Air 25 aún no implementado');
+  return [];
+}
+
+export async function searchFlyUIO(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Fly UIO aún no implementado');
+  return [];
+}
+
+export async function searchSkyConnect(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] Sky Connect aún no implementado');
+  return [];
+}
+
+export async function searchAmericanFly(_filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  // TODO: Implementar cuando esté disponible en ESB
+  console.warn('[Search Service] American Fly aún no implementado');
+  return [];
+}
+
 function priceOf(r: SearchResult): number {
   if (r.kind === "hotel")  return (r.item as any).price;
   if (r.kind === "car")    return (r.item as any).pricePerDay;
