@@ -608,44 +608,44 @@ export const ESB = {
     /**
      * Busca vehículos disponibles con filtros
      */
-    buscarServicios: (categoria?: string, transmision?: string, minPrecio?: number, maxPrecio?: number) =>
-      easyCarSoapAdapter.buscarServicios(categoria, transmision, minPrecio, maxPrecio),
+    buscarServicios: (categoria?: string, transmision?: string) =>
+      easyCarSoapAdapter.buscarServicios(categoria, transmision),
     
     /**
      * Obtiene detalle de un vehículo
      */
-    obtenerDetalleVehiculo: (idVehiculo: string) =>
-      easyCarSoapAdapter.obtenerDetalleVehiculo(idVehiculo),
+    obtenerDetalleServicio: (idVehiculo: number) =>
+      easyCarSoapAdapter.obtenerDetalleServicio(idVehiculo),
     
     /**
      * Verifica disponibilidad de un vehículo
      */
-    verificarDisponibilidad: (idVehiculo: string, fechaInicio: Date, fechaFin: Date) =>
-      easyCarSoapAdapter.verificarDisponibilidad(idVehiculo, fechaInicio, fechaFin),
+    verificarDisponibilidad: (idVehiculo: number, inicio: string, fin: string) =>
+      easyCarSoapAdapter.verificarDisponibilidad(idVehiculo, inicio, fin),
     
     /**
      * Cotiza alquiler de vehículo
      */
-    cotizarAlquiler: (idVehiculo: string, fechaInicio: Date, fechaFin: Date) =>
-      easyCarSoapAdapter.cotizarAlquiler(idVehiculo, fechaInicio, fechaFin),
+    cotizarReserva: (idVehiculo: number, dias: number) =>
+      easyCarSoapAdapter.cotizarReserva(idVehiculo, dias),
     
     /**
      * Crea pre-reserva
      */
-    crearPreReserva: (idVehiculo: string, idCliente: string, fechaInicio: Date, fechaFin: Date, holdMinutes: number) =>
-      easyCarSoapAdapter.crearPreReserva(idVehiculo, idCliente, fechaInicio, fechaFin, holdMinutes),
+    crearPreReserva: (idVehiculo: number, idCliente: number, inicio: string, fin: string, edadConductor: number) =>
+      easyCarSoapAdapter.crearPreReserva(idVehiculo, idCliente, inicio, fin, edadConductor),
     
     /**
      * Confirma reserva
      */
-    confirmarReserva: (preBookingId: string, metodoPago: string, datosPago: any) =>
-      easyCarSoapAdapter.confirmarReserva(preBookingId, metodoPago, datosPago),
+    confirmarReserva: (idReserva: number) =>
+      easyCarSoapAdapter.confirmarReserva(idReserva),
     
     /**
      * Cancela reserva
      */
-    cancelarReserva: (bookingId: string, motivo: string) =>
-      easyCarSoapAdapter.cancelarReserva(bookingId, motivo)
+    cancelarReservaIntegracion: (idReserva: number, motivo: string) =>
+      easyCarSoapAdapter.cancelarReservaIntegracion(idReserva, motivo)
   },
 
   // ==================== Servicio Backend Cuenca (100% Funcional) ====================
@@ -666,8 +666,8 @@ export const ESB = {
     /**
      * Verifica disponibilidad de un paquete
      */
-    verificarDisponibilidad: (idServicio: string, fecha: Date, unidades: number) =>
-      backendCuencaSoapAdapter.verificarDisponibilidad(idServicio, fecha, unidades),
+    verificarDisponibilidad: (sku: string, inicio: string | undefined, fin: string | undefined, unidades: number) =>
+      backendCuencaSoapAdapter.verificarDisponibilidad(sku, inicio, fin, unidades),
     
     /**
      * Cotiza reserva de paquete turístico
@@ -678,7 +678,7 @@ export const ESB = {
     /**
      * Crea pre-reserva
      */
-    crearPreReserva: (itinerario: any[], cliente: any, holdMinutes: number, idemKey: string) =>
+    crearPreReserva: (itinerario?: string, cliente?: string, holdMinutes?: number, idemKey?: string) =>
       backendCuencaSoapAdapter.crearPreReserva(itinerario, cliente, holdMinutes, idemKey),
     
     /**

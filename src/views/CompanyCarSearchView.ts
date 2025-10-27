@@ -27,7 +27,7 @@ export function CompanyCarSearchView(
   
   // Determinar qué filtros mostrar según la empresa
   const showCityFilter = companyId === "cuencacar";
-  const showAdvancedFilters = companyId === "alquileraugye";
+  // const showAdvancedFilters = companyId === "alquileraugye"; // TODO: Usar cuando se implemente
   
   section.innerHTML = `
     <div class="container">

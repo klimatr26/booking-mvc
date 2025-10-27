@@ -36,9 +36,9 @@ async function testEasyCar() {
     }
     
     return vehiculos;
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Error en test:", error);
-    console.error("Stack:", error.stack);
+    console.error("Stack:", error?.stack);
     throw error;
   }
 }

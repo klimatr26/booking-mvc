@@ -326,33 +326,19 @@ export async function esbSearchCarCompany(
         );
         break;
       
-      case 'autosRentCar':
-        vehiculos = await ESB.rentCar.buscarServicios(
-          filters?.categoria,
-          filters?.transmision,
-          filters?.ciudad
-        );
-        break;
-      
-      case 'rentaAutosMadrid':
-        vehiculos = await ESB.rentaAutosMadrid.buscarServicios(
-          filters?.categoria,
-          filters?.transmision
-        );
-        break;
-      
-      case 'alquilerAugye':
-        vehiculos = await ESB.alquilerAugye.buscarAutos(
-          filters?.ciudad,
-          filters?.categoria,
-          filters?.transmision,
-          filters?.minPrecio,
-          filters?.maxPrecio
-        );
-        break;
+      // TODO: Implementar estos servicios cuando estén disponibles en el ESB
+      // case 'autosRentCar':
+      //   vehiculos = await ESB.rentCar.buscarServicios(...);
+      //   break;
+      // case 'rentaAutosMadrid':
+      //   vehiculos = await ESB.rentaAutosMadrid.buscarServicios(...);
+      //   break;
+      // case 'alquilerAugye':
+      //   vehiculos = await ESB.alquilerAugye.buscarAutos(...);
+      //   break;
       
       default:
-        console.error(`[ESB Adapter] Empresa no soportada: ${companyKey}`);
+        console.warn(`[ESB Adapter] Empresa ${companyKey} aún no implementada`);
         return [];
     }
     
