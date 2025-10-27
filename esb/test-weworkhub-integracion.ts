@@ -38,12 +38,12 @@ async function testWeWorkHubIntegracion() {
   try {
     const filtros: FiltrosBusquedaSoapDto = {
       serviceType: 'HOTEL',
-      ciudad: 'Cuenca',
-      fechaInicio: '2025-12-15',
-      fechaFin: '2025-12-20',
-      precioMin: 50,
-      precioMax: 500,
-      amenities: ['WiFi', 'Piscina'],
+      ciudad: 'Quito',
+      fechaInicio: '2025-11-01',
+      fechaFin: '2025-11-03',
+      precioMin: 30,
+      precioMax: 120,
+      amenities: ['WiFi', 'Desayuno'],
       clasificacionMin: 3,
       adultos: 2,
       ninos: 0

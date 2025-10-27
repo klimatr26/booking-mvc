@@ -5,8 +5,12 @@
  * Type: ASMX Restaurant Service (Same structure as Sushi Bar)
  */
 
-import { SieteMaresSoapAdapter } from './gateway/siete-mares.adapter';
-import { getESBConfig } from './utils/config';
+import { SieteMaresSoapAdapter } from './gateway/siete-mares.adapter.js';
+import { getESBConfig } from './utils/config.js';
+
+// Global test state for sharing data between tests
+let preReservaId: number;
+let reservaId: number;
 
 const config = getESBConfig();
 const adapter = new SieteMaresSoapAdapter(config.endpoints.sieteMares);
@@ -136,7 +140,7 @@ async function runTests() {
       testsPassed++;
       
       // Save for next test
-      (global as any).preReservaId = preReserva.PreBookingId;
+      preReservaId = preReserva.PreBookingId;
     } else {
       console.log('⏭️  Skipped - No services available');
     }

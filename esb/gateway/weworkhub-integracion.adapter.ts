@@ -151,13 +151,15 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
    */
   private buildSoapEnvelope(body: string): string {
     return `<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" 
-               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-               xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <soap:Body>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:tns="http://weworkhub/integracion"
+                  xmlns:q1="http://schemas.datacontract.org/2004/07/WeWorkHub.Models.Soap"
+                  xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+  <soapenv:Header/>
+  <soapenv:Body>
     ${body}
-  </soap:Body>
-</soap:Envelope>`;
+  </soapenv:Body>
+</soapenv:Envelope>`;
   }
 
   /**
@@ -173,20 +175,20 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
    */
   async buscarServicios(filtros: FiltrosBusquedaSoapDto): Promise<ServicioSoapDto[]> {
     const soapBody = `
-      <tns:buscarServicios xmlns:tns="http://weworkhub/integracion">
-        <tns:filtros xmlns:soap="http://schemas.datacontract.org/2004/07/WeWorkHub.Models.Soap">
-          ${filtros.serviceType ? `<soap:serviceType>${filtros.serviceType}</soap:serviceType>` : '<soap:serviceType xsi:nil="true" />'}
-          ${filtros.ciudad ? `<soap:ciudad>${filtros.ciudad}</soap:ciudad>` : '<soap:ciudad xsi:nil="true" />'}
-          ${filtros.fechaInicio ? `<soap:fechaInicio>${filtros.fechaInicio}</soap:fechaInicio>` : '<soap:fechaInicio xsi:nil="true" />'}
-          ${filtros.fechaFin ? `<soap:fechaFin>${filtros.fechaFin}</soap:fechaFin>` : '<soap:fechaFin xsi:nil="true" />'}
-          ${filtros.precioMin !== undefined ? `<soap:precioMin>${filtros.precioMin}</soap:precioMin>` : '<soap:precioMin>0</soap:precioMin>'}
-          ${filtros.precioMax !== undefined ? `<soap:precioMax>${filtros.precioMax}</soap:precioMax>` : '<soap:precioMax>999999</soap:precioMax>'}
-          ${this.buildArrayOfString(filtros.amenities || [], 'soap:amenities', 'http://schemas.microsoft.com/2003/10/Serialization/Arrays')}
-          ${filtros.clasificacionMin !== undefined ? `<soap:clasificacionMin>${filtros.clasificacionMin}</soap:clasificacionMin>` : '<soap:clasificacionMin>0</soap:clasificacionMin>'}
-          ${filtros.adultos !== undefined ? `<soap:adultos>${filtros.adultos}</soap:adultos>` : '<soap:adultos>1</soap:adultos>'}
-          ${filtros.ninos !== undefined ? `<soap:ninos>${filtros.ninos}</soap:ninos>` : '<soap:ninos>0</soap:ninos>'}
-        </tns:filtros>
-      </tns:buscarServicios>
+    <tns:buscarServicios>
+      <tns:filtros>
+        ${filtros.serviceType ? `<q1:serviceType>${filtros.serviceType}</q1:serviceType>` : ''}
+        ${filtros.ciudad ? `<q1:ciudad>${filtros.ciudad}</q1:ciudad>` : ''}
+        ${filtros.fechaInicio ? `<q1:fechaInicio>${filtros.fechaInicio}</q1:fechaInicio>` : ''}
+        ${filtros.fechaFin ? `<q1:fechaFin>${filtros.fechaFin}</q1:fechaFin>` : ''}
+        ${filtros.precioMin !== undefined ? `<q1:precioMin>${filtros.precioMin}</q1:precioMin>` : ''}
+        ${filtros.precioMax !== undefined ? `<q1:precioMax>${filtros.precioMax}</q1:precioMax>` : ''}
+        ${filtros.amenities && filtros.amenities.length > 0 ? `<q1:amenities>${filtros.amenities.map(a => `<arr:string>${a}</arr:string>`).join('')}</q1:amenities>` : ''}
+        ${filtros.clasificacionMin !== undefined ? `<q1:clasificacionMin>${filtros.clasificacionMin}</q1:clasificacionMin>` : ''}
+        ${filtros.adultos !== undefined ? `<q1:adultos>${filtros.adultos}</q1:adultos>` : ''}
+        ${filtros.ninos !== undefined ? `<q1:ninos>${filtros.ninos}</q1:ninos>` : ''}
+      </tns:filtros>
+    </tns:buscarServicios>
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
