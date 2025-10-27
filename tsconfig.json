@@ -1,26 +1,49 @@
 {
   "compilerOptions": {
+    /* Objetivo y módulos (ESM moderno; sirve para Vite y Node ESM) */
     "target": "ES2022",
-    "useDefineForClassFields": true,
     "module": "ESNext",
+    "moduleResolution": "NodeNext",
+
+    /* Tipos base (DOM para frontend + ES2022) */
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
-    "skipLibCheck": true,
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-
-    /* Linting */
+    /* Calidad/ergonomía */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    /* Rutas/alias (ajústalas si usas otros) */
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"],
+      "@esb/*": ["esb/*"],
+      "@server/*": ["server/*"],
+      "@models/*": ["esb/models/*"],
+      "@utils/*": ["esb/utils/*"]
+    },
+
+    /* Tipos de Node para código de server/proxy (si te choca en front, puedes quitarlo) */
+    "types": ["node"]
+
+    /* Si luego separas por proyectos, podrías usar:
+       "composite": true,
+       y tsconfig por subcarpeta con "references". Para ahora, no hace falta. */
   },
-  "include": ["src"]
+
+  /* <- ¡Esto es lo más importante para “Find All References”! */
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "esb/**/*.ts",
+    "server/**/*.ts",
+    "netlify/**/*.ts",
+    "vite.config.ts",
+    "env.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "build", ".cache"]
 }
