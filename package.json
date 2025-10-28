@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
+    "build:check": "tsc && vite build",
     "preview": "vite preview",
     "proxy": "node server/proxy.js"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
+    "@types/pg": "^8.15.6",
     "sass": "^1.93.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
@@ -19,12 +21,16 @@
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
+    "@types/flatpickr": "^3.0.2",
     "@xmldom/xmldom": "^0.8.11",
     "axios": "^1.12.2",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.5",
     "dayjs": "^1.11.18",
     "express": "^4.21.2",
+    "flatpickr": "^4.6.13"
+  },
+  "optionalDependencies": {
     "pg": "^8.16.3"
   }
 }

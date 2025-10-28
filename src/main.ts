@@ -1,6 +1,6 @@
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "./styles/custom.scss";
-import { Router } from "./core/router";
+import { router } from "./core/router";
 import { HomeController } from "./controllers/HomeController";
 import { ResultsController } from "./controllers/ResultsController";
 import { CartController } from "./controllers/CartController";
@@ -20,14 +20,16 @@ import { RestaurantCompaniesController } from "./controllers/RestaurantCompanies
 import { CompanyRestaurantSearchController } from "./controllers/CompanyRestaurantSearchController";
 import { AirlineCompaniesController } from "./controllers/AirlineCompaniesController";
 
-export const router = new Router();
+// Re-export router for other modules
+export { router };
 
 function mountShell() {
+  console.log('[main.ts] mountShell called');
   mountHeader();
   mountFooter();
 }
 
-
+// Mount shell ONCE at the beginning
 mountShell();
 mountFloatingCart(); 
 router.register("/", HomeController);
@@ -156,3 +158,10 @@ router.register("/flights/americanfly", () => {
 });
 
 router.register("*", () => { document.getElementById("view")!.innerHTML = `<div class="container py-5">404</div>`; });
+
+console.log('[main.ts] All routes registered, total routes:', (router as any).routes?.length);
+
+// Manually trigger router resolution after all routes are registered
+// This is needed because the window 'load' event may have already fired
+console.log('[main.ts] Calling router.resolve(), current hash:', location.hash);
+router.resolve();

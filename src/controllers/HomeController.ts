@@ -7,7 +7,9 @@ import { ResultCard } from "../components/ResultCard";
 import type { FilterState, SearchResult } from "../models/types";
 
 export function HomeController() {
+  console.log('[HomeController] Controller called');
   const mount = document.getElementById("view")!;
+  console.log('[HomeController] Mount element:', mount);
   mount.innerHTML = "";
 
   // 👉 NO vuelvas a escribir "kinds" aquí. SearchBar ya lo guarda.
@@ -15,6 +17,7 @@ export function HomeController() {
     sessionStorage.setItem("q", q); // opcional (SearchBar ya lo guardó)
     router.navigate("/results");
   });
+  console.log('[HomeController] Appending view to mount');
   mount.appendChild(view.el);
 
   // Config base para el feed "Recomendado" (mostrar todo)

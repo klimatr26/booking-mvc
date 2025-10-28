@@ -4,8 +4,15 @@ export class Router {
   private routes: Route[] = [];
 
   constructor() {
-    window.addEventListener("hashchange", () => this.resolve());
-    window.addEventListener("load", () => this.resolve());
+    console.log('[Router] Constructor called, attaching event listeners');
+    window.addEventListener("hashchange", () => {
+      console.log('[Router] hashchange event fired');
+      this.resolve();
+    });
+    window.addEventListener("load", () => {
+      console.log('[Router] load event fired');
+      this.resolve();
+    });
   }
 
   register(path: string, action: () => void) {
@@ -21,16 +28,23 @@ export class Router {
     location.hash = clean;
   }
 
-  private resolve() {
+  // Public method to manually trigger resolution
+  resolve() {
+    console.log('[Router] resolve() called, current hash:', location.hash, 'routes count:', this.routes.length);
     // Normaliza: "#/ruta?x=1" -> "/ruta"
     const raw = (location.hash || "#/").replace(/^#/, "");
     const path = raw.split("?")[0] || "/";
+    console.log('[Router] Normalized path:', path);
 
     const hit =
       this.routes.find((r) => r.path === path) ??
       this.routes.find((r) => r.path === "*");
 
-    if (hit) hit.action();
+    console.log('[Router] Route match found:', hit ? hit.path : 'NONE');
+    if (hit) {
+      console.log('[Router] Executing route action for:', hit.path);
+      hit.action();
+    }
   }
 }
 
