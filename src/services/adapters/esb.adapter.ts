@@ -269,6 +269,165 @@ export async function esbSearchEasyCar(filters?: {
 }
 
 /**
+ * Búsqueda específica de WeWorkHub Cuenca via SOAP
+ */
+export async function esbSearchWeWorkHub(filters?: any): Promise<SearchResult[]> {
+  try {
+    console.log('[ESB Adapter] 🏨 Buscando en WeWorkHub Cuenca via SOAP...', filters);
+    
+    const useESB = import.meta.env.VITE_USE_ESB === 'true';
+    if (!useESB) {
+      console.warn('[ESB Adapter] ⚠️ ESB no está habilitado');
+      return [];
+    }
+    
+    // Importar adapter y config
+    const weWorkHubModule = await import('../../../esb/gateway/weworkhub-integracion.adapter');
+    const configModule = await import('../../../esb/utils/config');
+    
+    const config = configModule.getESBConfig();
+    const weWorkHubConfig = config.endpoints.weWorkHubIntegracion;
+    
+    console.log('[ESB Adapter] Config WeWorkHub:', {
+      url: weWorkHubConfig.url,
+      enabled: weWorkHubConfig.enabled
+    });
+    
+    if (!weWorkHubConfig.enabled) {
+      console.warn('[ESB Adapter] ⚠️ WeWorkHub está deshabilitado');
+      return [];
+    }
+    
+    // Crear adapter
+    const adapter = new weWorkHubModule.WeWorkHubIntegracionSoapAdapter(weWorkHubConfig);
+    
+    // Construir filtros para el servicio SOAP
+    const filtrosSoap = {
+      filtros: filters?.ciudad || filters?.destino || 'Cuenca',
+      checkIn: filters?.checkIn || new Date().toISOString().split('T')[0],
+      checkOut: filters?.checkOut || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      adultos: filters?.adultos || 2,
+      ninos: filters?.ninos || 0,
+      habitaciones: filters?.habitaciones || 1
+    };
+    
+    console.log('[ESB Adapter] Llamando a búsqueda con filtros:', filtrosSoap);
+    
+    // Llamar al servicio SOAP
+    const habitaciones = await adapter.buscarServicios(filtrosSoap);
+    
+    console.log(`[ESB Adapter] ✅ Respuesta: ${habitaciones.length} habitaciones`);
+    
+    // Convertir a formato SearchResult
+    let resultados: SearchResult[] = habitaciones.map((h: any) => ({
+      kind: 'hotel' as const,
+      item: {
+        id: `weworkhub-${h.IdServicio || h.idServicio}`,
+        name: h.Nombre || h.nombre || 'Habitación WeWorkHub',
+        city: h.Ciudad || h.ciudad || 'Cuenca',
+        price: parseFloat(h.Precio || h.precio || 0),
+        rating: parseInt(h.Clasificacion || h.clasificacion || 4),
+        photo: h.ImagenURL || h.imagenUrl || '/hotel-placeholder.jpg'
+      } as Hotel
+    }));
+    
+    // Aplicar filtros adicionales
+    if (filters?.minPrecio) {
+      resultados = resultados.filter(r => (r.item as Hotel).price >= filters.minPrecio);
+    }
+    if (filters?.maxPrecio) {
+      resultados = resultados.filter(r => (r.item as Hotel).price <= filters.maxPrecio);
+    }
+    if (filters?.estrellas) {
+      resultados = resultados.filter(r => (r.item as Hotel).rating >= filters.estrellas);
+    }
+    
+    console.log(`[ESB Adapter] ✅ ${resultados.length} habitaciones después de filtros`);
+    
+    return resultados;
+  } catch (error) {
+    console.error('[ESB Adapter] ❌ Error en WeWorkHub:', error);
+    return [];
+  }
+}
+
+/**
+ * Búsqueda específica de KM25Madrid via SOAP
+ */
+export async function esbSearchKM25Madrid(filters?: any): Promise<SearchResult[]> {
+  try {
+    console.log('[ESB Adapter] 🏨 Buscando en KM25Madrid via SOAP...', filters);
+    
+    const useESB = import.meta.env.VITE_USE_ESB === 'true';
+    if (!useESB) {
+      console.warn('[ESB Adapter] ⚠️ ESB no está habilitado');
+      return [];
+    }
+    
+    // Importar adapter y config
+    const km25Module = await import('../../../esb/gateway/km25madrid-hotel.adapter');
+    const configModule = await import('../../../esb/utils/config');
+    
+    const config = configModule.getESBConfig();
+    const km25Config = config.endpoints.km25Madrid;
+    
+    console.log('[ESB Adapter] Config KM25Madrid:', {
+      url: km25Config.url,
+      enabled: km25Config.enabled
+    });
+    
+    if (!km25Config.enabled) {
+      console.warn('[ESB Adapter] ⚠️ KM25Madrid está deshabilitado');
+      return [];
+    }
+    
+    // Crear adapter
+    const adapter = new km25Module.KM25MadridHotelSoapAdapter(km25Config);
+    
+    // Construir filtros para el servicio SOAP
+    const filtrosSoap: any = {
+      serviceType: 'hotel',
+      ciudad: filters?.ciudad || 'Madrid',
+      checkIn: filters?.checkIn || new Date().toISOString().split('T')[0],
+      checkOut: filters?.checkOut || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      adultos: filters?.adultos || 2,
+      ninos: filters?.ninos || 0,
+      habitaciones: filters?.habitaciones || 1,
+      precioMin: filters?.minPrecio,
+      precioMax: filters?.maxPrecio,
+      clasificacion: filters?.estrellas
+    };
+    
+    console.log('[ESB Adapter] Llamando a buscarServicios con filtros:', filtrosSoap);
+    
+    // Llamar al servicio SOAP
+    const hoteles = await adapter.buscarServicios(filtrosSoap);
+    
+    console.log(`[ESB Adapter] ✅ Respuesta: ${hoteles.length} hoteles`);
+    
+    // Convertir a formato SearchResult
+    const resultados: SearchResult[] = hoteles.map((h: any) => ({
+      kind: 'hotel' as const,
+      item: {
+        id: `km25madrid-${h.IdServicio || h.idServicio || h.id}`,
+        name: h.Nombre || h.nombre || 'KM25Madrid Hotel',
+        city: h.Ciudad || h.ciudad || 'Madrid',
+        price: parseFloat(h.Precio || h.precio || 0),
+        rating: parseInt(h.Clasificacion || h.clasificacion || 5),
+        photo: h.ImagenURL || h.imagenUrl || '/hotel-placeholder.jpg'
+      } as Hotel
+    }));
+    
+    console.log(`[ESB Adapter] ✅ ${resultados.length} hoteles convertidos`);
+    
+    return resultados;
+  } catch (error) {
+    console.error('[ESB Adapter] ❌ Error en KM25Madrid:', error);
+    return [];
+  }
+}
+
+/**
  * Buscar específicamente en Backend Cuenca (servicio 100% funcional)
  */
 export async function esbSearchBackendCuenca(filters?: {
@@ -326,15 +485,32 @@ export async function esbSearchCarCompany(
         );
         break;
       
+      case 'alquilerAugye':
+        // Construir filtros para Alquiler Augye
+        const filtrosAugye = {
+          serviceType: 'car',
+          ciudad: filters?.ciudad,
+          categoria: filters?.categoria,
+          gearbox: filters?.gearbox,
+          pickupOffice: filters?.pickupOffice,
+          dropoffOffice: filters?.dropoffOffice,
+          pickupAt: filters?.pickupAt,
+          dropoffAt: filters?.dropoffAt,
+          driverAge: filters?.driverAge,
+          precioMin: filters?.precioMin,
+          precioMax: filters?.precioMax,
+          page: filters?.page || 1,
+          pageSize: filters?.pageSize || 50
+        };
+        vehiculos = await ESB.alquilerAugye.buscarServicios(filtrosAugye);
+        break;
+      
       // TODO: Implementar estos servicios cuando estén disponibles en el ESB
       // case 'autosRentCar':
       //   vehiculos = await ESB.rentCar.buscarServicios(...);
       //   break;
       // case 'rentaAutosMadrid':
       //   vehiculos = await ESB.rentaAutosMadrid.buscarServicios(...);
-      //   break;
-      // case 'alquilerAugye':
-      //   vehiculos = await ESB.alquilerAugye.buscarAutos(...);
       //   break;
       
       default:
@@ -349,17 +525,23 @@ export async function esbSearchCarCompany(
       // Adaptarse a diferentes formatos de DTO
       const brand = v.Marca || v.marca || v.brand || 'Auto';
       const model = v.Modelo || v.modelo || v.model || '';
-      const id = v.IdVehiculo?.toString() || v.IdAuto?.toString() || v.id?.toString() || v.Id?.toString() || '';
-      const price = v.PrecioBaseDia || v.PrecioPorDia || v.precioDia || v.precioBase || 0;
+      const id = v.sku?.toString() || v.IdVehiculo?.toString() || v.IdAuto?.toString() || v.id?.toString() || v.Id?.toString() || '';
+      const price = v.precioDia || v.PrecioBaseDia || v.PrecioPorDia || v.precioBase || 0;
+      const city = v.ciudad || v.Ciudad || '';
+      const category = v.categoria || v.Categoria || '';
+      const transmission = v.gearbox || v.Gearbox || v.transmision || '';
       
       return {
         kind: 'car',
         item: {
-          id,
+          id: `${companyKey}-${id}`,
           brand,
           model,
           pricePerDay: price,
-          photo: '/car-placeholder.jpg'
+          city,
+          category,
+          transmission,
+          photo: v.imagen || '/car-placeholder.jpg'
         } as Car
       };
     });
@@ -379,3 +561,331 @@ export async function esbSearchCarCompany(
     return [];
   }
 }
+
+/**
+ * Búsqueda específica de Sabor Andino via SOAP
+ */
+export async function esbSearchSaborAndino(filters?: any): Promise<SearchResult[]> {
+  try {
+    console.log('[ESB Adapter] 🌮 Buscando en Sabor Andino via SOAP...', filters);
+    
+    const useESB = import.meta.env.VITE_USE_ESB === 'true';
+    if (!useESB) {
+      console.warn('[ESB Adapter] ⚠️ ESB no está habilitado');
+      return [];
+    }
+    
+    // Importar adapter y config
+    const saborAndinoModule = await import('../../../esb/gateway/sabor-andino.adapter');
+    const configModule = await import('../../../esb/utils/config');
+    
+    const config = configModule.getESBConfig();
+    const saborAndinoConfig = config.endpoints.saborAndino;
+    
+    console.log('[ESB Adapter] Config Sabor Andino:', {
+      url: saborAndinoConfig.url,
+      enabled: saborAndinoConfig.enabled
+    });
+    
+    if (!saborAndinoConfig.enabled) {
+      console.warn('[ESB Adapter] ⚠️ Sabor Andino está deshabilitado');
+      return [];
+    }
+    
+    // Crear adapter
+    const adapter = new saborAndinoModule.SaborAndinoSoapAdapter(saborAndinoConfig);
+    
+    console.log('[ESB Adapter] Llamando a buscarServicios...');
+    
+    // Llamar al servicio SOAP
+    const mesas = await adapter.buscarServicios('');
+    
+    console.log(`[ESB Adapter] ✅ Respuesta: ${mesas.length} mesas`);
+    
+    // Convertir a formato SearchResult
+    let resultados: SearchResult[] = mesas.map((m: any) => ({
+      kind: 'restaurant' as const,
+      item: {
+        id: `saborandino-${m.IdServicio || m.idServicio}`,
+        name: m.Nombre || m.nombre || `Mesa #${m.IdServicio}`,
+        city: m.Ciudad || m.ciudad || 'Guayaquil',
+        price: parseFloat(m.Precio || m.precio || 0),
+        rating: parseInt(m.Clasificacion || m.clasificacion || 5),
+        photo: m.ImagenURL || m.imagenUrl || '/restaurant-placeholder.jpg'
+      } as Restaurant
+    }));
+    
+    // Aplicar filtros adicionales
+    if (filters?.minPrecio) {
+      resultados = resultados.filter(r => (r.item as Restaurant).price >= filters.minPrecio);
+    }
+    if (filters?.maxPrecio) {
+      resultados = resultados.filter(r => (r.item as Restaurant).price <= filters.maxPrecio);
+    }
+    
+    console.log(`[ESB Adapter] ✅ ${resultados.length} mesas después de filtros`);
+    
+    return resultados;
+  } catch (error) {
+    console.error('[ESB Adapter] ❌ Error en Sabor Andino:', error);
+    return [];
+  }
+}
+
+/**
+ * Búsqueda específica de El Cangrejo Feliz via SOAP
+ */
+export async function esbSearchElCangrejoFeliz(filters?: any): Promise<SearchResult[]> {
+  try {
+    console.log('[ESB Adapter] 🦀 Buscando en El Cangrejo Feliz via SOAP...', filters);
+    
+    const useESB = import.meta.env.VITE_USE_ESB === 'true';
+    if (!useESB) {
+      console.warn('[ESB Adapter] ⚠️ ESB no está habilitado');
+      return [];
+    }
+    
+    // Importar adapter y config
+    const cangrejoModule = await import('../../../esb/gateway/cangrejo-feliz.adapter');
+    const configModule = await import('../../../esb/utils/config');
+    
+    const config = configModule.getESBConfig();
+    const cangrejoConfig = config.endpoints.cangrejoFeliz;
+    
+    console.log('[ESB Adapter] Config El Cangrejo Feliz:', {
+      url: cangrejoConfig.url,
+      enabled: cangrejoConfig.enabled
+    });
+    
+    if (!cangrejoConfig.enabled) {
+      console.warn('[ESB Adapter] ⚠️ El Cangrejo Feliz está deshabilitado');
+      return [];
+    }
+    
+    // Crear adapter
+    const adapter = new cangrejoModule.ElCangrejoFelizSoapAdapter(cangrejoConfig);
+    
+    console.log('[ESB Adapter] Llamando a buscarServicios...');
+    
+    // Llamar al servicio SOAP
+    const mesas = await adapter.buscarServicios('');
+    
+    console.log(`[ESB Adapter] ✅ Respuesta: ${mesas.length} mesas`);
+    
+    // Convertir a formato SearchResult
+    let resultados: SearchResult[] = mesas.map((m: any) => ({
+      kind: 'restaurant' as const,
+      item: {
+        id: `elcangrejofeliz-${m.IdServicio || m.idServicio}`,
+        name: m.Nombre || m.nombre || `Mesa #${m.IdServicio}`,
+        city: m.Ciudad || m.ciudad || 'Guayaquil',
+        price: parseFloat(m.Precio || m.precio || 0),
+        rating: parseInt(m.Clasificacion || m.clasificacion || 5),
+        photo: m.ImagenURL || m.imagenUrl || '/restaurant-placeholder.jpg'
+      } as Restaurant
+    }));
+    
+    // Aplicar filtros adicionales
+    if (filters?.minPrecio) {
+      resultados = resultados.filter(r => (r.item as Restaurant).price >= filters.minPrecio);
+    }
+    if (filters?.maxPrecio) {
+      resultados = resultados.filter(r => (r.item as Restaurant).price <= filters.maxPrecio);
+    }
+    
+    console.log(`[ESB Adapter] ✅ ${resultados.length} mesas después de filtros`);
+    
+    return resultados;
+  } catch (error) {
+    console.error('[ESB Adapter] ❌ Error en El Cangrejo Feliz:', error);
+    return [];
+  }
+}
+
+/**
+ * Búsqueda específica de Sanctum Cortejo via SOAP
+ */
+export async function esbSearchSanctumCortejo(filters?: any): Promise<SearchResult[]> {
+  try {
+    console.log('[ESB Adapter] 🏛️  Buscando en Sanctum Cortejo via SOAP...', filters);
+    
+    const useESB = import.meta.env.VITE_USE_ESB === 'true';
+    if (!useESB) {
+      console.warn('[ESB Adapter] ⚠️ ESB no está habilitado');
+      return [];
+    }
+    
+    // Importar adapter y config
+    const sanctumModule = await import('../../../esb/gateway/sanctum-cortejo.adapter');
+    const configModule = await import('../../../esb/utils/config');
+    
+    const config = configModule.getESBConfig();
+    const sanctumConfig = config.endpoints.restaurant; // Sanctum Cortejo usa el endpoint restaurant
+    
+    console.log('[ESB Adapter] Config Sanctum Cortejo:', {
+      url: sanctumConfig.url,
+      enabled: sanctumConfig.enabled
+    });
+    
+    if (!sanctumConfig.enabled) {
+      console.warn('[ESB Adapter] ⚠️ Sanctum Cortejo está deshabilitado');
+      return [];
+    }
+    
+    // Crear adapter
+    const adapter = new sanctumModule.SanctumCortejoSoapAdapter(sanctumConfig);
+    
+    console.log('[ESB Adapter] Llamando a buscarServicios...');
+    
+    // Llamar al servicio SOAP
+    const mesas = await adapter.buscarServicios('');
+    
+    console.log(`[ESB Adapter] ✅ Respuesta: ${mesas.length} mesas`);
+    
+    // Convertir a formato SearchResult
+    let resultados: SearchResult[] = mesas.map((m: any) => ({
+      kind: 'restaurant' as const,
+      item: {
+        id: `sanctumcortejo-${m.IdServicio}`,
+        name: m.Nombre || `Mesa #${m.IdServicio}`,
+        city: m.Ciudad || 'Madrid',
+        rating: 5, // Todas son 5 estrellas según el XML
+        price: parseFloat(m.Precio?.replace(',', '.') || '0'),
+        photo: m.ImagenURL || '/img/restaurants/sanctum-cortejo-default.jpg',
+        cuisine: m.Tipo || 'Restaurante',
+        description: m.Descripcion || '',
+        policies: m.Politicas || 'Cancelación sin costo 48h antes',
+        rules: m.Reglas || 'No hay reembolsos'
+      }
+    }));
+    
+    // Aplicar filtros si los hay
+    if (filters) {
+      if (filters.ciudad) {
+        const ciudadLower = filters.ciudad.toLowerCase();
+        resultados = resultados.filter(r => 
+          (r.item as Restaurant).city.toLowerCase().includes(ciudadLower)
+        );
+      }
+      
+      if (filters.precioMax) {
+        resultados = resultados.filter(r => 
+          (r.item as Restaurant).price <= parseFloat(filters.precioMax)
+        );
+      }
+      
+      if (filters.precioMin) {
+        resultados = resultados.filter(r => 
+          (r.item as Restaurant).price >= parseFloat(filters.precioMin)
+        );
+      }
+    }
+    
+    console.log(`[ESB Adapter] ✅ ${resultados.length} mesas después de filtros`);
+    
+    return resultados;
+  } catch (error) {
+    console.error('[ESB Adapter] ❌ Error en Sanctum Cortejo:', error);
+    return [];
+  }
+}
+
+/**
+ * Búsqueda específica de 7 Mares via SOAP
+ */
+export async function esbSearchSieteMares(filters?: any): Promise<SearchResult[]> {
+  try {
+    console.log('[ESB Adapter] 🌊 Buscando en 7 Mares via SOAP...', filters);
+    
+    // Validación de USE_ESB
+    if (import.meta.env.VITE_USE_ESB !== 'true') {
+      console.warn('[ESB Adapter] ⚠️ USE_ESB no está habilitado');
+      return [];
+    }
+
+    // Importar dinámicamente el adaptador de 7 Mares
+    const sietemaresModule = await import('../../../esb/gateway/siete-mares.adapter');
+    const { getESBConfig } = await import('../../../esb/utils/config');
+    const config = getESBConfig();
+    
+    const sietemaresConfig = config.endpoints.sieteMares;
+    
+    console.log('[ESB Adapter] Config 7 Mares:', {
+      url: sietemaresConfig.url,
+      enabled: sietemaresConfig.enabled
+    });
+
+    if (!sietemaresConfig.enabled) {
+      console.warn('[ESB Adapter] ⚠️ 7 Mares está deshabilitado');
+      return [];
+    }
+
+    // Crear adaptador y buscar servicios
+    const adapter = new sietemaresModule.SieteMaresSoapAdapter(sietemaresConfig);
+    const mesas = await adapter.buscarServicios(''); // Buscar todas las mesas
+    
+    console.log(`[ESB Adapter] 📋 ${mesas.length} mesas encontradas en 7 Mares`);
+    
+    // Transformar a SearchResult
+    let resultados: SearchResult[] = mesas.map(m => ({
+      kind: 'restaurant' as const,
+      item: {
+        id: `sietemares-${m.IdTipo}`,
+        name: m.Nombre || 'Mesa 7 Mares',
+        city: 'Cuenca', // 7 Mares está en Cuenca
+        cuisine: m.Subtipo || 'Mariscos',
+        price: parseFloat(m.Descripcion?.match(/\$(\d+)/)?.[1] || '15'), // Extraer precio de descripción
+        rating: 4, // Rating por defecto
+        photo: '/img/restaurants/7mares-default.jpg',
+        description: m.Descripcion || 'Restaurante 7 Mares - Especialidad en mariscos'
+      }
+    }));
+
+    // Aplicar filtros si existen
+    if (filters) {
+      // Filtro por ciudad
+      if (filters.city) {
+        resultados = resultados.filter(r => {
+          if (r.kind !== 'restaurant') return false;
+          const restaurant = r.item as import('../../models/types').Restaurant;
+          return restaurant.city.toLowerCase().includes(filters.city.toLowerCase());
+        });
+      }
+
+      // Filtro por precio mínimo
+      if (typeof filters.priceMin === 'number') {
+        resultados = resultados.filter(r => {
+          if (r.kind !== 'restaurant') return false;
+          const restaurant = r.item as import('../../models/types').Restaurant;
+          return restaurant.price >= filters.priceMin;
+        });
+      }
+
+      // Filtro por precio máximo
+      if (typeof filters.priceMax === 'number') {
+        resultados = resultados.filter(r => {
+          if (r.kind !== 'restaurant') return false;
+          const restaurant = r.item as import('../../models/types').Restaurant;
+          return restaurant.price <= filters.priceMax;
+        });
+      }
+
+      // Filtro por rating mínimo
+      if (typeof filters.ratingMin === 'number') {
+        resultados = resultados.filter(r => {
+          if (r.kind !== 'restaurant') return false;
+          const restaurant = r.item as import('../../models/types').Restaurant;
+          return (restaurant.rating ?? 0) >= filters.ratingMin;
+        });
+      }
+    }
+    
+    console.log(`[ESB Adapter] ✅ ${resultados.length} mesas después de filtros`);
+    
+    return resultados;
+  } catch (error) {
+    console.error('[ESB Adapter] ❌ Error en 7 Mares:', error);
+    return [];
+  }
+}
+

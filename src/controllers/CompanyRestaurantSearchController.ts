@@ -1,19 +1,19 @@
 /**
- * Controlador de Búsqueda de Hoteles por Cadena
+ * Controlador de Búsqueda de Mesas de Restaurante por Compañía
  */
 
-import { CompanyHotelSearchView, renderHotelResults } from "../views/CompanyHotelSearchView";
+import { CompanyRestaurantSearchView, renderRestaurantResults } from "../views/CompanyRestaurantSearchView";
 import * as searchService from "../services/search.service";
 import type { SearchResult } from "../models/types";
 import { showToast } from "../core/toast";
 
-export class CompanyHotelSearchController {
+export class CompanyRestaurantSearchController {
   private companyId: string;
   private view: HTMLElement;
 
   constructor(companyId: string) {
     this.companyId = companyId;
-    this.view = CompanyHotelSearchView(companyId);
+    this.view = CompanyRestaurantSearchView(companyId);
   }
 
   mount(container: HTMLElement) {
@@ -23,29 +23,29 @@ export class CompanyHotelSearchController {
     // Setup event listeners
     this.setupEventListeners();
     
-    // Initial search
-    this.loadHotels({});
+    // Initial search - mostrar todas las mesas
+    this.loadTables({});
   }
 
   private setupEventListeners() {
     const searchBtn = this.view.querySelector('#searchBtn');
     const clearBtn = this.view.querySelector('#clearFiltersBtn');
-    const cityFilter = this.view.querySelector('#cityFilter');
-    const starsFilter = this.view.querySelector('#starsFilter');
+    const ubicacionFilter = this.view.querySelector('#ubicacionFilter');
+    const capacidadFilter = this.view.querySelector('#capacidadFilter');
     const minPrice = this.view.querySelector('#minPrice');
     const maxPrice = this.view.querySelector('#maxPrice');
 
     searchBtn?.addEventListener('click', () => {
       const filters = this.getFilters();
-      this.loadHotels(filters);
+      this.loadTables(filters);
     });
 
     clearBtn?.addEventListener('click', () => {
-      if (cityFilter) (cityFilter as HTMLSelectElement).value = '';
-      if (starsFilter) (starsFilter as HTMLSelectElement).value = '';
+      if (ubicacionFilter) (ubicacionFilter as HTMLSelectElement).value = '';
+      if (capacidadFilter) (capacidadFilter as HTMLSelectElement).value = '';
       if (minPrice) (minPrice as HTMLInputElement).value = '';
       if (maxPrice) (maxPrice as HTMLInputElement).value = '';
-      this.loadHotels({});
+      this.loadTables({});
     });
 
     // Enter key in price inputs
@@ -53,27 +53,27 @@ export class CompanyHotelSearchController {
       input?.addEventListener('keypress', (e: any) => {
         if (e.key === 'Enter') {
           const filters = this.getFilters();
-          this.loadHotels(filters);
+          this.loadTables(filters);
         }
       });
     });
   }
 
   private getFilters() {
-    const cityFilter = this.view.querySelector('#cityFilter') as HTMLSelectElement;
-    const starsFilter = this.view.querySelector('#starsFilter') as HTMLSelectElement;
+    const ubicacionFilter = this.view.querySelector('#ubicacionFilter') as HTMLSelectElement;
+    const capacidadFilter = this.view.querySelector('#capacidadFilter') as HTMLSelectElement;
     const minPrice = this.view.querySelector('#minPrice') as HTMLInputElement;
     const maxPrice = this.view.querySelector('#maxPrice') as HTMLInputElement;
 
     return {
-      ciudad: cityFilter?.value || undefined,
-      estrellas: starsFilter?.value ? parseInt(starsFilter.value) : undefined,
+      ubicacion: ubicacionFilter?.value || undefined,
+      capacidad: capacidadFilter?.value ? parseInt(capacidadFilter.value) : undefined,
       minPrecio: minPrice?.value ? parseFloat(minPrice.value) : undefined,
       maxPrecio: maxPrice?.value ? parseFloat(maxPrice.value) : undefined
     };
   }
 
-  private async loadHotels(filters: any) {
+  private async loadTables(filters: any) {
     const loadingSpinner = this.view.querySelector('#loadingSpinner') as HTMLElement;
     const resultsGrid = this.view.querySelector('#resultsGrid') as HTMLElement;
     const emptyState = this.view.querySelector('#emptyState') as HTMLElement;
@@ -84,52 +84,58 @@ export class CompanyHotelSearchController {
       resultsGrid.style.display = 'none';
       emptyState.style.display = 'none';
 
-      console.log(`[CompanyHotelSearchController] Buscando hoteles en ${this.companyId}...`);
+      console.log(`[CompanyRestaurantSearchController] Buscando mesas en ${this.companyId}...`);
       
       let results: SearchResult[] = [];
 
       // Route to appropriate service based on company
       switch (this.companyId) {
-        case 'hotelcr':
-          results = await searchService.searchHotelCR(filters);
+        case 'saborandino':
+          results = await searchService.searchSaborAndino(filters);
           break;
-        case 'cuencahotels':
-          results = await searchService.searchCuencaHotels(filters);
+        case 'elcangrejofeliz':
+          results = await searchService.searchElCangrejoFeliz(filters);
           break;
-        case 'madrid25':
-          results = await searchService.searchMadrid25(filters);
+        case 'sanctumcortejo':
+          results = await searchService.searchSanctumCortejo(filters);
           break;
-        case 'km25madrid':
-          results = await searchService.searchKM25Madrid(filters);
+        case 'sietemares':
+          results = await searchService.searchSieteMares(filters);
           break;
-        case 'petfriendly':
-          results = await searchService.searchPetFriendly(filters);
+        case 'restaurantgh':
+          results = await searchService.searchRestaurantGH(filters);
           break;
-        case 'weworkhub':
-          results = await searchService.searchWeWorkHub(filters);
+        case 'madrfood':
+          results = await searchService.searchMadrFood(filters);
+          break;
+        case 'foodkm25':
+          results = await searchService.searchFoodKM25(filters);
+          break;
+        case 'cuencafood':
+          results = await searchService.searchCuencaFood(filters);
           break;
         default:
-          console.error(`[CompanyHotelSearchController] Compañía no soportada: ${this.companyId}`);
+          console.error(`[CompanyRestaurantSearchController] Compañía no soportada: ${this.companyId}`);
       }
 
-      console.log(`[CompanyHotelSearchController] ${results.length} hoteles encontrados`);
+      console.log(`[CompanyRestaurantSearchController] ${results.length} mesas encontradas`);
 
       // Hide loading
       loadingSpinner.style.display = 'none';
 
       // Render results
-      renderHotelResults(results, this.view);
+      renderRestaurantResults(results, this.view);
 
       if (results.length > 0) {
         showToast('toast-success');
       }
 
     } catch (error: any) {
-      console.error('[CompanyHotelSearchController] Error:', error);
+      console.error('[CompanyRestaurantSearchController] Error:', error);
       loadingSpinner.style.display = 'none';
       emptyState.style.display = 'block';
       showToast('toast-error');
-      alert(`Error al buscar hoteles:\n\n${error?.message || 'Error desconocido'}`);
+      alert(`Error al buscar mesas:\n\n${error?.message || 'Error desconocido'}`);
     }
   }
 }

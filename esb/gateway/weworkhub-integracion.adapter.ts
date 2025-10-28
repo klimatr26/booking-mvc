@@ -150,16 +150,13 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
    * Construir sobre SOAP (ASMX style)
    */
   private buildSoapEnvelope(body: string): string {
-    return `<?xml version="1.0" encoding="utf-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
-                  xmlns:tns="http://weworkhub/integracion"
-                  xmlns:q1="http://schemas.datacontract.org/2004/07/WeWorkHub.Models.Soap"
-                  xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
-  <soapenv:Header/>
-  <soapenv:Body>
-    ${body}
-  </soapenv:Body>
-</soapenv:Envelope>`;
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" 
+               xmlns:tns="http://weworkhub/integracion">
+   <soap:Body>
+${body}
+   </soap:Body>
+</soap:Envelope>`;
   }
 
   /**
@@ -174,22 +171,17 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
    * Buscar servicios con filtros
    */
   async buscarServicios(filtros: FiltrosBusquedaSoapDto): Promise<ServicioSoapDto[]> {
-    const soapBody = `
-    <tns:buscarServicios>
-      <tns:filtros>
-        ${filtros.serviceType ? `<q1:serviceType>${filtros.serviceType}</q1:serviceType>` : ''}
-        ${filtros.ciudad ? `<q1:ciudad>${filtros.ciudad}</q1:ciudad>` : ''}
-        ${filtros.fechaInicio ? `<q1:fechaInicio>${filtros.fechaInicio}</q1:fechaInicio>` : ''}
-        ${filtros.fechaFin ? `<q1:fechaFin>${filtros.fechaFin}</q1:fechaFin>` : ''}
-        ${filtros.precioMin !== undefined ? `<q1:precioMin>${filtros.precioMin}</q1:precioMin>` : ''}
-        ${filtros.precioMax !== undefined ? `<q1:precioMax>${filtros.precioMax}</q1:precioMax>` : ''}
-        ${filtros.amenities && filtros.amenities.length > 0 ? `<q1:amenities>${filtros.amenities.map(a => `<arr:string>${a}</arr:string>`).join('')}</q1:amenities>` : ''}
-        ${filtros.clasificacionMin !== undefined ? `<q1:clasificacionMin>${filtros.clasificacionMin}</q1:clasificacionMin>` : ''}
-        ${filtros.adultos !== undefined ? `<q1:adultos>${filtros.adultos}</q1:adultos>` : ''}
-        ${filtros.ninos !== undefined ? `<q1:ninos>${filtros.ninos}</q1:ninos>` : ''}
-      </tns:filtros>
-    </tns:buscarServicios>
-    `;
+    const soapBody = `      <tns:buscarServicios>
+         <tns:filtros>
+            ${filtros.serviceType ? `<serviceType>${filtros.serviceType}</serviceType>` : ''}
+            ${filtros.fechaInicio ? `<fechaInicio>${filtros.fechaInicio}</fechaInicio>` : ''}
+            ${filtros.fechaFin ? `<fechaFin>${filtros.fechaFin}</fechaFin>` : ''}
+            ${filtros.precioMin !== undefined ? `<precioMin>${filtros.precioMin}</precioMin>` : ''}
+            ${filtros.precioMax !== undefined ? `<precioMax>${filtros.precioMax}</precioMax>` : ''}
+            ${filtros.adultos !== undefined ? `<adultos>${filtros.adultos}</adultos>` : ''}
+            ${filtros.ninos !== undefined ? `<ninos>${filtros.ninos}</ninos>` : ''}
+         </tns:filtros>
+      </tns:buscarServicios>`;
 
     const envelope = this.buildSoapEnvelope(soapBody);
     const response = await this.call(
@@ -204,11 +196,9 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
    * Obtener detalle de un servicio específico
    */
   async obtenerDetalleServicio(idServicio: string): Promise<ServicioSoapDto> {
-    const soapBody = `
-      <tns:obtenerDetalleServicio xmlns:tns="http://weworkhub/integracion">
-        <tns:idServicio>${idServicio}</tns:idServicio>
-      </tns:obtenerDetalleServicio>
-    `;
+    const soapBody = `      <tns:obtenerDetalleServicio>
+         <tns:idServicio>${idServicio}</tns:idServicio>
+      </tns:obtenerDetalleServicio>`;
 
     const envelope = this.buildSoapEnvelope(soapBody);
     const response = await this.call(
@@ -228,14 +218,12 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
     fin: string,
     unidades: number
   ): Promise<boolean> {
-    const soapBody = `
-      <tns:verificarDisponibilidad xmlns:tns="http://weworkhub/integracion">
-        <tns:sku>${sku}</tns:sku>
-        <tns:inicio>${inicio}</tns:inicio>
-        <tns:fin>${fin}</tns:fin>
-        <tns:unidades>${unidades}</tns:unidades>
-      </tns:verificarDisponibilidad>
-    `;
+    const soapBody = `      <tns:verificarDisponibilidad>
+         <tns:sku>${sku}</tns:sku>
+         <tns:inicio>${inicio}</tns:inicio>
+         <tns:fin>${fin}</tns:fin>
+         <tns:unidades>${unidades}</tns:unidades>
+      </tns:verificarDisponibilidad>`;
 
     const envelope = this.buildSoapEnvelope(soapBody);
     const response = await this.call(
@@ -251,24 +239,20 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
    * Cotizar reserva (calcular precio total)
    */
   async cotizarReserva(items: ItemItinerarioSoapDto[]): Promise<CotizacionSoapDto> {
-    const itemsXml = items.map(item => `
-      <soap:ItemItinerarioSoapDto>
-        <soap:sku>${item.sku}</soap:sku>
-        <soap:serviceType>${item.serviceType}</soap:serviceType>
-        <soap:fechaInicio>${item.fechaInicio}</soap:fechaInicio>
-        <soap:fechaFin>${item.fechaFin}</soap:fechaFin>
-        <soap:unidades>${item.unidades}</soap:unidades>
-        <soap:precioUnitario>${item.precioUnitario}</soap:precioUnitario>
-      </soap:ItemItinerarioSoapDto>
-    `).join('');
+    const itemsXml = items.map(item => `            <ItemItinerarioSoapDto>
+               <sku>${item.sku}</sku>
+               <serviceType>${item.serviceType}</serviceType>
+               <fechaInicio>${item.fechaInicio}</fechaInicio>
+               <fechaFin>${item.fechaFin}</fechaFin>
+               <unidades>${item.unidades}</unidades>
+               <precioUnitario>${item.precioUnitario}</precioUnitario>
+            </ItemItinerarioSoapDto>`).join('\n');
 
-    const soapBody = `
-      <tns:cotizarReserva xmlns:tns="http://weworkhub/integracion">
-        <tns:items xmlns:soap="http://schemas.datacontract.org/2004/07/WeWorkHub.Models.Soap">
-          ${itemsXml}
-        </tns:items>
-      </tns:cotizarReserva>
-    `;
+    const soapBody = `      <tns:cotizarReserva>
+         <tns:items>
+${itemsXml}
+         </tns:items>
+      </tns:cotizarReserva>`;
 
     const envelope = this.buildSoapEnvelope(soapBody);
     const response = await this.call(
@@ -288,31 +272,31 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
     holdMinutes: number,
     idemKey: string
   ): Promise<PreReservaSoapDto> {
-    const itemsXml = itinerario.map(item => `
-      <soap:ItemItinerarioSoapDto>
-        <soap:sku>${item.sku}</soap:sku>
-        <soap:serviceType>${item.serviceType}</soap:serviceType>
-        <soap:fechaInicio>${item.fechaInicio}</soap:fechaInicio>
-        <soap:fechaFin>${item.fechaFin}</soap:fechaFin>
-        <soap:unidades>${item.unidades}</soap:unidades>
-        <soap:precioUnitario>${item.precioUnitario}</soap:precioUnitario>
-      </soap:ItemItinerarioSoapDto>
-    `).join('');
+    const itemsXml = itinerario.map(item => `            <ItemItinerarioSoapDto>
+               <sku>${item.sku}</sku>
+               <serviceType>${item.serviceType}</serviceType>
+               <fechaInicio>${item.fechaInicio}</fechaInicio>
+               <fechaFin>${item.fechaFin}</fechaFin>
+               <unidades>${item.unidades}</unidades>
+               <precioUnitario>${item.precioUnitario}</precioUnitario>
+            </ItemItinerarioSoapDto>`).join('\n');
 
-    const clienteXml = this.buildUsuarioXml(cliente);
-
-    const soapBody = `
-      <tns:crearPreReserva xmlns:tns="http://weworkhub/integracion">
-        <tns:itinerario xmlns:soap="http://schemas.datacontract.org/2004/07/WeWorkHub.Models.Soap">
-          ${itemsXml}
-        </tns:itinerario>
-        <tns:cliente xmlns:soap="http://schemas.datacontract.org/2004/07/WeWorkHub.Models.Soap">
-          ${clienteXml}
-        </tns:cliente>
-        <tns:holdMinutes>${holdMinutes}</tns:holdMinutes>
-        <tns:idemKey>${idemKey}</tns:idemKey>
-      </tns:crearPreReserva>
-    `;
+    const soapBody = `      <tns:crearPreReserva>
+         <tns:itinerario>
+${itemsXml}
+         </tns:itinerario>
+         <tns:cliente>
+            <NumeroIdentificacion>${cliente.NumeroIdentificacion}</NumeroIdentificacion>
+            <TipoIdentificacion>${cliente.TipoIdentificacion}</TipoIdentificacion>
+            <Email>${cliente.Email}</Email>
+            <Nombres>${cliente.Nombres}</Nombres>
+            <Apellidos>${cliente.Apellidos}</Apellidos>
+            <Telefono>${cliente.Telefono}</Telefono>
+            <Nacionalidad>${cliente.Nacionalidad || ''}</Nacionalidad>
+         </tns:cliente>
+         <tns:holdMinutes>${holdMinutes}</tns:holdMinutes>
+         <tns:idemKey>${idemKey}</tns:idemKey>
+      </tns:crearPreReserva>`;
 
     const envelope = this.buildSoapEnvelope(soapBody);
     const response = await this.call(
@@ -331,13 +315,11 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
     metodoPago: string,
     datosPago: string
   ): Promise<ReservaSoapDto> {
-    const soapBody = `
-      <tns:confirmarReserva xmlns:tns="http://weworkhub/integracion">
-        <tns:preBookingId>${preBookingId}</tns:preBookingId>
-        <tns:metodoPago>${metodoPago}</tns:metodoPago>
-        <tns:datosPago>${datosPago}</tns:datosPago>
-      </tns:confirmarReserva>
-    `;
+    const soapBody = `      <tns:confirmarReserva>
+         <tns:preBookingId>${preBookingId}</tns:preBookingId>
+         <tns:metodoPago>${metodoPago}</tns:metodoPago>
+         <tns:datosPago>${datosPago}</tns:datosPago>
+      </tns:confirmarReserva>`;
 
     const envelope = this.buildSoapEnvelope(soapBody);
     const response = await this.call(
@@ -352,12 +334,10 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
    * Cancelar reserva
    */
   async cancelarReservaIntegracion(bookingId: string, motivo: string): Promise<boolean> {
-    const soapBody = `
-      <tns:cancelarReservaIntegracion xmlns:tns="http://weworkhub/integracion">
-        <tns:bookingId>${bookingId}</tns:bookingId>
-        <tns:motivo>${motivo}</tns:motivo>
-      </tns:cancelarReservaIntegracion>
-    `;
+    const soapBody = `      <tns:cancelarReservaIntegracion>
+         <tns:bookingId>${bookingId}</tns:bookingId>
+         <tns:motivo>${motivo}</tns:motivo>
+      </tns:cancelarReservaIntegracion>`;
 
     const envelope = this.buildSoapEnvelope(soapBody);
     const response = await this.call(
@@ -372,44 +352,6 @@ export class WeWorkHubIntegracionSoapAdapter extends SoapClient {
   // ============================================================================
   // Helper Methods
   // ============================================================================
-
-  /**
-   * Construir XML de array de strings
-   */
-  private buildArrayOfString(items: string[], tagName: string, xmlns: string): string {
-    if (!items || items.length === 0) {
-      return `<${tagName} xsi:nil="true" />`;
-    }
-
-    const itemsXml = items.map(item => `<arr:string>${item}</arr:string>`).join('');
-    return `<${tagName} xmlns:arr="${xmlns}">${itemsXml}</${tagName}>`;
-  }
-
-  /**
-   * Construir XML de usuario
-   */
-  private buildUsuarioXml(usuario: UsuarioSoapDto): string {
-    return `
-      ${usuario.IdUsuario !== undefined ? `<soap:IdUsuario>${usuario.IdUsuario}</soap:IdUsuario>` : '<soap:IdUsuario>0</soap:IdUsuario>'}
-      ${usuario.UuidUsuario ? `<soap:UuidUsuario>${usuario.UuidUsuario}</soap:UuidUsuario>` : '<soap:UuidUsuario xsi:nil="true" />'}
-      <soap:NumeroIdentificacion>${usuario.NumeroIdentificacion}</soap:NumeroIdentificacion>
-      <soap:TipoIdentificacion>${usuario.TipoIdentificacion}</soap:TipoIdentificacion>
-      <soap:Email>${usuario.Email}</soap:Email>
-      <soap:Nombres>${usuario.Nombres}</soap:Nombres>
-      <soap:Apellidos>${usuario.Apellidos}</soap:Apellidos>
-      <soap:Telefono>${usuario.Telefono}</soap:Telefono>
-      ${usuario.TelefonoSecundario ? `<soap:TelefonoSecundario>${usuario.TelefonoSecundario}</soap:TelefonoSecundario>` : '<soap:TelefonoSecundario xsi:nil="true" />'}
-      ${usuario.FechaNacimiento ? `<soap:FechaNacimiento>${usuario.FechaNacimiento}</soap:FechaNacimiento>` : '<soap:FechaNacimiento xsi:nil="true" />'}
-      ${usuario.Genero ? `<soap:Genero>${usuario.Genero}</soap:Genero>` : '<soap:Genero xsi:nil="true" />'}
-      ${usuario.Nacionalidad ? `<soap:Nacionalidad>${usuario.Nacionalidad}</soap:Nacionalidad>` : '<soap:Nacionalidad xsi:nil="true" />'}
-      ${usuario.EstadoCivil ? `<soap:EstadoCivil>${usuario.EstadoCivil}</soap:EstadoCivil>` : '<soap:EstadoCivil xsi:nil="true" />'}
-      ${usuario.DireccionPrincipal ? `<soap:DireccionPrincipal>${usuario.DireccionPrincipal}</soap:DireccionPrincipal>` : '<soap:DireccionPrincipal xsi:nil="true" />'}
-      ${usuario.EmailVerificado !== undefined ? `<soap:EmailVerificado>${usuario.EmailVerificado}</soap:EmailVerificado>` : '<soap:EmailVerificado xsi:nil="true" />'}
-      ${usuario.CuentaBloqueada !== undefined ? `<soap:CuentaBloqueada>${usuario.CuentaBloqueada}</soap:CuentaBloqueada>` : '<soap:CuentaBloqueada xsi:nil="true" />'}
-      ${usuario.Active !== undefined ? `<soap:Active>${usuario.Active}</soap:Active>` : '<soap:Active xsi:nil="true" />'}
-      ${usuario.Password ? `<soap:Password>${usuario.Password}</soap:Password>` : '<soap:Password xsi:nil="true" />'}
-    `;
-  }
 
   /**
    * Parsear lista de servicios

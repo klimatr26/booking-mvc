@@ -40,12 +40,15 @@ import { CafeteriaSoapAdapter } from './gateway/cafeteria.adapter';
 import { CuencaCarRentalSoapAdapter } from './gateway/cuenca-car.adapter';
 import { SkyAndesFlightSoapAdapter } from './gateway/skyandes.adapter';
 import { ElCangrejoFelizSoapAdapter } from './gateway/cangrejo-feliz.adapter';
+import { SaborAndinoSoapAdapter } from './gateway/sabor-andino.adapter';
 import { HotelBoutiqueSoapAdapter } from './gateway/hotel-boutique.adapter';
 import { AutosRentCarSoapAdapter } from './gateway/autos-rentcar.adapter';
 import { KM25MadridHotelSoapAdapter } from './gateway/km25madrid-hotel.adapter';
 import { RealCuencaHotelSoapAdapter } from './gateway/real-cuenca-hotel.adapter';
 import { EasyCarSoapAdapter } from './gateway/easy-car.adapter';
 import { BackendCuencaSoapAdapter } from './gateway/backend-cuenca.adapter';
+import { WeWorkHubIntegracionSoapAdapter } from './gateway/weworkhub-integracion.adapter';
+import { AlquilerAugyeSoapAdapter } from './gateway/alquiler-augye.adapter';
 import { getESBConfig } from './utils/config';
 import type { FiltrosBusqueda } from './models/dtos';
 import type { Usuario, Reserva, Pago } from './models/entities';
@@ -63,12 +66,15 @@ const cafeteriaSoapAdapter = new CafeteriaSoapAdapter(config.endpoints.cafeteria
 const cuencaCarSoapAdapter = new CuencaCarRentalSoapAdapter(config.endpoints.cuencaCar);
 const skyandesSoapAdapter = new SkyAndesFlightSoapAdapter(config.endpoints.skyandes);
 const cangrejoFelizSoapAdapter = new ElCangrejoFelizSoapAdapter(config.endpoints.cangrejoFeliz);
+const saborAndinoSoapAdapter = new SaborAndinoSoapAdapter(config.endpoints.saborAndino);
 const hotelBoutiqueSoapAdapter = new HotelBoutiqueSoapAdapter(config.endpoints.hotelBoutique);
 const autosRentCarSoapAdapter = new AutosRentCarSoapAdapter(config.endpoints.autosRentCar);
 const km25MadridSoapAdapter = new KM25MadridHotelSoapAdapter(config.endpoints.km25Madrid);
 const realCuencaSoapAdapter = new RealCuencaHotelSoapAdapter(config.endpoints.realCuenca);
 const easyCarSoapAdapter = new EasyCarSoapAdapter(config.endpoints.easyCar);
 const backendCuencaSoapAdapter = new BackendCuencaSoapAdapter(config.endpoints.backendCuenca);
+const weWorkHubSoapAdapter = new WeWorkHubIntegracionSoapAdapter(config.endpoints.weWorkHubIntegracion);
+const alquilerAugyeSoapAdapter = new AlquilerAugyeSoapAdapter(config.endpoints.alquilerAugye);
 
 export const ESB = {
   // ==================== Búsqueda e Integración ====================
@@ -290,6 +296,51 @@ export const ESB = {
       cuencaCarSoapAdapter.cancelarReservaIntegracion(bookingId, motivo)
   },
 
+  // ==================== Alquiler Augye - Autos (AGQ/AGG) ====================
+  alquilerAugye: {
+    /**
+     * Busca autos disponibles por filtros (ciudad, categoría, transmisión, precio)
+     */
+    buscarServicios: (filtros: any) =>
+      alquilerAugyeSoapAdapter.buscarServicios(filtros),
+    
+    /**
+     * Obtiene el detalle completo de un vehículo
+     */
+    obtenerDetalle: (idServicio: number) =>
+      alquilerAugyeSoapAdapter.obtenerDetalleServicio(idServicio),
+    
+    /**
+     * Verifica disponibilidad de un vehículo por fechas
+     */
+    verificarDisponibilidad: (sku: number, inicio: string, fin: string, unidades: number) =>
+      alquilerAugyeSoapAdapter.verificarDisponibilidad(sku, inicio, fin, unidades),
+    
+    /**
+     * Cotiza una reserva de auto (calcula total con impuestos)
+     */
+    cotizar: (items: any[]) =>
+      alquilerAugyeSoapAdapter.cotizarReserva(items),
+    
+    /**
+     * Crea una pre-reserva temporal
+     */
+    crearPreReserva: (itinerario: any[], clienteId: number, holdMinutes: number, idemKey: string, pickupAt: string, dropoffAt: string, autoId: number) =>
+      alquilerAugyeSoapAdapter.crearPreReserva(itinerario, clienteId, holdMinutes, idemKey, pickupAt, dropoffAt, autoId),
+    
+    /**
+     * Confirma reserva de auto y genera comprobante
+     */
+    confirmarReserva: (preBookingId: string, metodoPago: string, datosPago: any) =>
+      alquilerAugyeSoapAdapter.confirmarReserva(preBookingId, metodoPago, datosPago),
+    
+    /**
+     * Cancela una reserva de auto
+     */
+    cancelar: (bookingId: string, motivo: string) =>
+      alquilerAugyeSoapAdapter.cancelarReservaIntegracion(bookingId, motivo)
+  },
+
   // ==================== SkyAndes - Vuelos ====================
   skyandes: {
     /**
@@ -378,6 +429,51 @@ export const ESB = {
      */
     cancelar: (bookingId: string, motivo: string) =>
       cangrejoFelizSoapAdapter.cancelarReserva(bookingId, motivo)
+  },
+
+  // ==================== Sabor Andino - Restaurante 🌮 ====================
+  saborAndino: {
+    /**
+     * Búsqueda unificada por filtros
+     */
+    buscarServicios: (filtros: string) =>
+      saborAndinoSoapAdapter.buscarServicios(filtros),
+    
+    /**
+     * Obtiene el detalle completo de un servicio/mesa
+     */
+    obtenerDetalle: (idServicio: number) =>
+      saborAndinoSoapAdapter.obtenerDetalleServicio(idServicio),
+    
+    /**
+     * Verifica disponibilidad de mesa por fechas y personas
+     */
+    verificarDisponibilidad: (sku: number, inicio: Date, fin: Date, unidades: number) =>
+      saborAndinoSoapAdapter.verificarDisponibilidad(sku, inicio, fin, unidades),
+    
+    /**
+     * Cotiza una reserva (calcula precio total con impuestos)
+     */
+    cotizar: (items: any[]) =>
+      saborAndinoSoapAdapter.cotizarReserva(items),
+    
+    /**
+     * Crea una pre-reserva temporal
+     */
+    crearPreReserva: (itinerario: string, cliente: string, holdMinutes: number, idemKey: string) =>
+      saborAndinoSoapAdapter.crearPreReserva(itinerario, cliente, holdMinutes, idemKey),
+    
+    /**
+     * Confirma y emite la reserva
+     */
+    confirmarReserva: (preBookingId: string, metodoPago: string, datosPago: any) =>
+      saborAndinoSoapAdapter.confirmarReserva(preBookingId, metodoPago, datosPago),
+    
+    /**
+     * Cancela una reserva
+     */
+    cancelar: (bookingId: string, motivo: string) =>
+      saborAndinoSoapAdapter.cancelarReservaIntegracion(bookingId, motivo)
   },
 
   // ==================== Hotel Boutique Paris 🏨 ====================
@@ -692,6 +788,68 @@ export const ESB = {
      */
     cancelarReservaIntegracion: (bookingId: string, motivo: string) =>
       backendCuencaSoapAdapter.cancelarReservaIntegracion(bookingId, motivo)
+  },
+
+  // ==================== 🏨 WeWorkHub Integración (Multi-Servicio Cuenca) ====================
+  
+  /**
+   * WeWorkHub Integración - Hub multi-servicio de Cuenca
+   * URL: http://inegracion.runasp.net/WS_Integracion.asmx
+   * Namespace: http://weworkhub/integracion
+   * Servicios: HOTEL, FLIGHT, CAR, RESTAURANT, PACKAGE
+   */
+  weWorkHub: {
+    /**
+     * Busca servicios (principalmente hoteles) con filtros avanzados
+     */
+    buscarServicios: (filtros: {
+      serviceType?: string;
+      ciudad?: string;
+      fechaInicio?: string;
+      fechaFin?: string;
+      precioMin?: number;
+      precioMax?: number;
+      amenities?: string[];
+      clasificacionMin?: number;
+      adultos?: number;
+      ninos?: number;
+    }) => weWorkHubSoapAdapter.buscarServicios(filtros),
+    
+    /**
+     * Obtiene detalle completo de un servicio por UUID
+     */
+    obtenerDetalleServicio: (idServicio: string) =>
+      weWorkHubSoapAdapter.obtenerDetalleServicio(idServicio),
+    
+    /**
+     * Verifica disponibilidad de habitación/servicio
+     */
+    verificarDisponibilidad: (sku: string, inicio: string, fin: string, unidades: number) =>
+      weWorkHubSoapAdapter.verificarDisponibilidad(sku, inicio, fin, unidades),
+    
+    /**
+     * Calcula cotización con desglose (subtotal, impuestos, fees)
+     */
+    cotizarReserva: (items: any[]) =>
+      weWorkHubSoapAdapter.cotizarReserva(items),
+    
+    /**
+     * Crea pre-reserva con hold temporal (minutos configurables)
+     */
+    crearPreReserva: (itinerario: any[], cliente: any, holdMinutes: number, idemKey: string) =>
+      weWorkHubSoapAdapter.crearPreReserva(itinerario, cliente, holdMinutes, idemKey),
+    
+    /**
+     * Confirma reserva y procesa pago
+     */
+    confirmarReserva: (preBookingId: string, metodoPago: string, datosPago: string) =>
+      weWorkHubSoapAdapter.confirmarReserva(preBookingId, metodoPago, datosPago),
+    
+    /**
+     * Cancela reserva con motivo
+     */
+    cancelarReservaIntegracion: (bookingId: string, motivo: string) =>
+      weWorkHubSoapAdapter.cancelarReservaIntegracion(bookingId, motivo)
   }
 };
 

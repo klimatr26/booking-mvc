@@ -32,19 +32,16 @@ async function testWeWorkHubIntegracion() {
   // ============================================================================
   // 1. BUSCAR SERVICIOS
   // ============================================================================
-  console.log('🔍 1. BUSCAR SERVICIOS');
+  console.log('🔍 1. BUSCAR SERVICIOS (Hoteles)');
   console.log('─────────────────────────────────────────────────────────────\n');
   
   try {
     const filtros: FiltrosBusquedaSoapDto = {
       serviceType: 'HOTEL',
-      ciudad: 'Quito',
       fechaInicio: '2025-11-01',
-      fechaFin: '2025-11-03',
-      precioMin: 30,
-      precioMax: 120,
-      amenities: ['WiFi', 'Desayuno'],
-      clasificacionMin: 3,
+      fechaFin: '2025-11-05',
+      precioMin: 50,
+      precioMax: 200,
       adultos: 2,
       ninos: 0
     };
@@ -70,20 +67,23 @@ async function testWeWorkHubIntegracion() {
     }
   } catch (error: any) {
     console.error('❌ Error en buscarServicios:', error.message);
+    console.error('Stack:', error.stack);
     console.log('⚠️  No se puede continuar sin servicios. Abortando tests.\n');
     return;
   }
 
   // ============================================================================
-  // 2. OBTENER DETALLE DEL SERVICIO
+  // 2. OBTENER DETALLE DEL SERVICIO (UUID real: 6a8a0a7c-f00c-4650-9df4-fd6f4f98c017)
   // ============================================================================
   console.log('\n🔍 2. OBTENER DETALLE DEL SERVICIO');
   console.log('─────────────────────────────────────────────────────────────\n');
   
   try {
-    console.log(`📤 Request: idServicio = ${testServicio.idServicio}`);
+    // Usar UUID real conocido: habitación 101
+    const idServicioReal = '6a8a0a7c-f00c-4650-9df4-fd6f4f98c017';
+    console.log(`📤 Request: idServicio = ${idServicioReal} (Habitación 101)`);
     
-    const detalle = await adapter.obtenerDetalleServicio(testServicio.idServicio);
+    const detalle = await adapter.obtenerDetalleServicio(idServicioReal);
     
     console.log('\n✅ Detalle obtenido:');
     console.log(`   ID: ${detalle.idServicio}`);
@@ -92,24 +92,28 @@ async function testWeWorkHubIntegracion() {
     console.log(`   Precio: ${detalle.moneda} ${detalle.precioDesde}`);
     console.log(`   Clasificación: ${detalle.clasificacion} ⭐`);
     console.log(`   Disponible: ${detalle.disponible ? '✅ Sí' : '❌ No'}\n`);
+    
+    // Usar este servicio para pruebas posteriores
+    testServicio = detalle;
   } catch (error: any) {
     console.error('❌ Error en obtenerDetalleServicio:', error.message);
+    console.error('Stack:', error.stack);
   }
 
   // ============================================================================
-  // 3. VERIFICAR DISPONIBILIDAD
+  // 3. VERIFICAR DISPONIBILIDAD (SKU real: 101)
   // ============================================================================
   console.log('\n🔍 3. VERIFICAR DISPONIBILIDAD');
   console.log('─────────────────────────────────────────────────────────────\n');
   
   try {
-    const sku = testServicio.idServicio;
-    const inicio = '2025-12-15';
-    const fin = '2025-12-20';
+    const sku = '101'; // SKU real de habitación 101
+    const inicio = '2025-11-01';
+    const fin = '2025-11-05';
     const unidades = 1;
 
     console.log('📤 Request:');
-    console.log(`   SKU: ${sku}`);
+    console.log(`   SKU: ${sku} (Habitación 101)`);
     console.log(`   Fecha inicio: ${inicio}`);
     console.log(`   Fecha fin: ${fin}`);
     console.log(`   Unidades: ${unidades}`);
@@ -118,18 +122,19 @@ async function testWeWorkHubIntegracion() {
     
     console.log(`\n${disponible ? '✅' : '❌'} Disponible: ${disponible ? 'Sí' : 'No'}\n`);
 
-    if (disponible) {
+    if (disponible || testServicio) {
       testItems = [{
-        sku,
-        serviceType: testServicio.serviceType,
+        sku: '101',
+        serviceType: 'HOTEL',
         fechaInicio: inicio,
         fechaFin: fin,
         unidades,
-        precioUnitario: testServicio.precioDesde
+        precioUnitario: 75.00 // Precio real de habitación 101
       }];
     }
   } catch (error: any) {
     console.error('❌ Error en verificarDisponibilidad:', error.message);
+    console.error('Stack:', error.stack);
   }
 
   // ============================================================================
@@ -172,111 +177,124 @@ async function testWeWorkHubIntegracion() {
   }
 
   // ============================================================================
-  // 5. CREAR PRE-RESERVA
+  // 5. CREAR PRE-RESERVA (Cliente y datos reales)
   // ============================================================================
   console.log('\n📝 5. CREAR PRE-RESERVA');
   console.log('─────────────────────────────────────────────────────────────\n');
   
   if (testItems.length === 0) {
-    console.log('⚠️  No hay items para pre-reservar. Saltando...\n');
-  } else {
-    try {
-      const cliente: UsuarioSoapDto = {
-        NumeroIdentificacion: '0102030405',
-        TipoIdentificacion: 'CEDULA',
-        Email: 'test@example.com',
-        Nombres: 'Juan Carlos',
-        Apellidos: 'Pérez González',
-        Telefono: '+593987654321',
-        Nacionalidad: 'Ecuatoriana',
-        Active: true
-      };
+    console.log('⚠️  No hay items para pre-reservar. Creando items de prueba con datos reales...');
+    // Usar datos reales: habitación 102
+    testItems = [{
+      sku: '102',
+      serviceType: 'HOTEL',
+      fechaInicio: '2025-11-15',
+      fechaFin: '2025-11-18',
+      unidades: 1,
+      precioUnitario: 75.00
+    }];
+  }
+  
+  try {
+    const cliente: UsuarioSoapDto = {
+      NumeroIdentificacion: '0987654321', // CI real del ejemplo
+      TipoIdentificacion: 'CI',
+      Email: 'cliente1@email.com',
+      Nombres: 'María José',
+      Apellidos: 'González López',
+      Telefono: '0999123456',
+      Nacionalidad: 'ECUATORIANA'
+    };
 
-      const holdMinutes = 30;
-      const idemKey = `TEST-${Date.now()}`;
+    const holdMinutes = 30;
+    const idemKey = `test-prereserva-api-${Date.now()}`;
 
-      console.log('📤 Request:');
-      console.log(`   Cliente: ${cliente.Nombres} ${cliente.Apellidos}`);
-      console.log(`   Email: ${cliente.Email}`);
-      console.log(`   Hold: ${holdMinutes} minutos`);
-      console.log(`   Idempotency Key: ${idemKey}`);
-      
-      const preReserva = await adapter.crearPreReserva(testItems, cliente, holdMinutes, idemKey);
-      
-      preBookingId = preReserva.preBookingId;
-      
-      console.log('\n✅ Pre-reserva creada:');
-      console.log(`   Pre-Booking ID: ${preReserva.preBookingId}`);
-      console.log(`   Expira en: ${preReserva.expiraEn}`);
-      console.log(`   Monto bloqueo: ${preReserva.montoBloqueo}`);
-      console.log(`   Estado: ${preReserva.estado}\n`);
-    } catch (error: any) {
-      console.error('❌ Error en crearPreReserva:', error.message);
-    }
+    console.log('📤 Request:');
+    console.log(`   Cliente: ${cliente.Nombres} ${cliente.Apellidos}`);
+    console.log(`   Email: ${cliente.Email}`);
+    console.log(`   CI: ${cliente.NumeroIdentificacion}`);
+    console.log(`   Hold: ${holdMinutes} minutos`);
+    console.log(`   Idempotency Key: ${idemKey}`);
+    console.log(`   Items: ${testItems.length}`);
+    
+    const preReserva = await adapter.crearPreReserva(testItems, cliente, holdMinutes, idemKey);
+    
+    preBookingId = preReserva.preBookingId;
+    
+    console.log('\n✅ Pre-reserva creada:');
+    console.log(`   Pre-Booking ID: ${preReserva.preBookingId}`);
+    console.log(`   Expira en: ${preReserva.expiraEn}`);
+    console.log(`   Monto bloqueo: ${preReserva.montoBloqueo}`);
+    console.log(`   Estado: ${preReserva.estado}\n`);
+  } catch (error: any) {
+    console.error('❌ Error en crearPreReserva:', error.message);
+    console.error('Stack:', error.stack);
   }
 
   // ============================================================================
-  // 6. CONFIRMAR RESERVA
+  // 6. CONFIRMAR RESERVA (Pre-reserva real: PRE-TEST-001)
   // ============================================================================
   console.log('\n✅ 6. CONFIRMAR RESERVA');
   console.log('─────────────────────────────────────────────────────────────\n');
   
   if (!preBookingId) {
-    console.log('⚠️  No hay pre-reserva para confirmar. Saltando...\n');
-  } else {
-    try {
-      const metodoPago = 'TARJETA_CREDITO';
-      const datosPago = JSON.stringify({
-        numeroTarjeta: '4111111111111111',
-        nombreTitular: 'JUAN PEREZ',
-        fechaExpiracion: '12/26',
-        cvv: '123'
-      });
+    console.log('⚠️  No hay pre-reserva creada. Usando pre-reserva real conocida: PRE-TEST-001\n');
+    preBookingId = 'PRE-TEST-001';
+  }
+  
+  try {
+    const metodoPago = 'TARJETA_CREDITO';
+    const datosPago = JSON.stringify({
+      numero: '4111111111111111',
+      exp: '12/26',
+      cvv: '123'
+    });
 
-      console.log('📤 Request:');
-      console.log(`   Pre-Booking ID: ${preBookingId}`);
-      console.log(`   Método de pago: ${metodoPago}`);
-      
-      const reserva = await adapter.confirmarReserva(preBookingId, metodoPago, datosPago);
-      
-      reservaId = reserva.CodigoReserva;
-      
-      console.log('\n✅ Reserva confirmada:');
-      console.log(`   ID Reserva: ${reserva.IdReserva}`);
-      console.log(`   UUID: ${reserva.UuidReserva}`);
-      console.log(`   Código: ${reserva.CodigoReserva}`);
-      console.log(`   Estado: ${reserva.EstadoReserva}`);
-      console.log(`   Check-in: ${reserva.FechaCheckin}`);
-      console.log(`   Check-out: ${reserva.FechaCheckout}`);
-      console.log(`   Total: ${reserva.Moneda} ${reserva.TotalReserva || reserva.Subtotal}\n`);
-    } catch (error: any) {
-      console.error('❌ Error en confirmarReserva:', error.message);
-    }
+    console.log('📤 Request:');
+    console.log(`   Pre-Booking ID: ${preBookingId}`);
+    console.log(`   Método de pago: ${metodoPago}`);
+    
+    const reserva = await adapter.confirmarReserva(preBookingId, metodoPago, datosPago);
+    
+    reservaId = reserva.CodigoReserva;
+    
+    console.log('\n✅ Reserva confirmada:');
+    console.log(`   ID Reserva: ${reserva.IdReserva}`);
+    console.log(`   UUID: ${reserva.UuidReserva}`);
+    console.log(`   Código: ${reserva.CodigoReserva}`);
+    console.log(`   Estado: ${reserva.EstadoReserva}`);
+    console.log(`   Check-in: ${reserva.FechaCheckin}`);
+    console.log(`   Check-out: ${reserva.FechaCheckout}`);
+    console.log(`   Total: ${reserva.Moneda} ${reserva.TotalReserva || reserva.Subtotal}\n`);
+  } catch (error: any) {
+    console.error('❌ Error en confirmarReserva:', error.message);
+    console.error('Stack:', error.stack);
   }
 
   // ============================================================================
-  // 7. CANCELAR RESERVA
+  // 7. CANCELAR RESERVA (Reserva real: RES-20251027-001)
   // ============================================================================
   console.log('\n🚫 7. CANCELAR RESERVA');
   console.log('─────────────────────────────────────────────────────────────\n');
   
-  if (!reservaId && !preBookingId) {
-    console.log('⚠️  No hay reserva para cancelar. Saltando...\n');
-  } else {
-    try {
-      const bookingId = reservaId || preBookingId;
-      const motivo = 'Prueba de integración - Cancelación automática';
+  if (!reservaId) {
+    console.log('⚠️  No hay reserva creada. Usando reserva real conocida: RES-20251027-001\n');
+    reservaId = 'RES-20251027-001';
+  }
+  
+  try {
+    const motivo = 'Prueba de cancelación desde API externa - Test automatizado';
 
-      console.log('📤 Request:');
-      console.log(`   Booking ID: ${bookingId}`);
-      console.log(`   Motivo: ${motivo}`);
-      
-      const cancelado = await adapter.cancelarReservaIntegracion(bookingId, motivo);
-      
-      console.log(`\n${cancelado ? '✅' : '❌'} Cancelado: ${cancelado ? 'Sí' : 'No'}\n`);
-    } catch (error: any) {
-      console.error('❌ Error en cancelarReservaIntegracion:', error.message);
-    }
+    console.log('📤 Request:');
+    console.log(`   Booking ID: ${reservaId}`);
+    console.log(`   Motivo: ${motivo}`);
+    
+    const cancelado = await adapter.cancelarReservaIntegracion(reservaId, motivo);
+    
+    console.log(`\n${cancelado ? '✅' : '❌'} Cancelado: ${cancelado ? 'Sí' : 'No'}\n`);
+  } catch (error: any) {
+    console.error('❌ Error en cancelarReservaIntegracion:', error.message);
+    console.error('Stack:', error.stack);
   }
 
   // ============================================================================

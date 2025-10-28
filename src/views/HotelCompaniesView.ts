@@ -40,10 +40,10 @@ const HOTEL_COMPANIES: HotelCompany[] = [
   {
     id: "km25madrid",
     name: "KM25 Madrid Hotels",
-    description: "Hoteles dentro de 25km del centro de Madrid",
-    status: "75%",
-    functional: false,
-    hotelCount: 15
+    description: "Hotel premium en Madrid con 5 estrellas. Servicios de alta calidad",
+    status: "100%",
+    functional: true,
+    hotelCount: 1
   },
   {
     id: "petfriendly",
@@ -52,6 +52,14 @@ const HOTEL_COMPANIES: HotelCompany[] = [
     status: "50%",
     functional: false,
     hotelCount: 6
+  },
+  {
+    id: "weworkhub",
+    name: "WeWorkHub Cuenca",
+    description: "Hotel integrado con sistema de reservas. Habitaciones disponibles en tiempo real",
+    status: "85%",
+    functional: true,
+    hotelCount: 8 // Habitaciones disponibles
   }
 ];
 
