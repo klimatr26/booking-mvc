@@ -7,7 +7,11 @@ import type { PreReserva } from '../models/entities';
 
 export class PreReservaRepository extends BaseRepository<PreReserva> {
   constructor() {
-    super('preBookingId');
+    super(
+      'preBookingId',
+      'pre_reserva',
+      ['preBookingId','itinerario','cliente','holdMinutes','expiraEn','idemKey','estado']
+    );
   }
 
   async findByEstado(estado: 'BLOQUEADO' | 'EXPIRADO' | 'CONFIRMADO'): Promise<PreReserva[]> {

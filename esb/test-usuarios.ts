@@ -9,10 +9,17 @@
 import type { Usuario } from './models/entities';
 import { usuarioRepository } from './dal/usuario.repository';
 
+function getDataBackend(): 'memory' | 'pg' {
+  const v = (process.env.DATA_BACKEND || 'memory').toLowerCase();
+  return v === 'pg' ? 'pg' : 'memory';
+}
+
 async function testUsuarios() {
   console.log('👤=====================================');
   console.log('   TEST: Repositorio de Usuarios (DAL)');
   console.log('=====================================\n');
+
+  console.log('Ejecutando en: ', getDataBackend() == 'memory' ? 'RAM' : 'Base de datos PostgreSQL');
 
   // 1) Crear dos usuarios
   const u1: Omit<Usuario, 'idUsuario' | 'fechaRegistro'> = {
@@ -24,9 +31,9 @@ async function testUsuarios() {
   };
 
   const u2: Omit<Usuario, 'idUsuario' | 'fechaRegistro'> = {
-    nombre: 'Kevin',
-    apellido: 'Lima',
-    email: 'kevin.lima@example.com',
+    nombre: 'Juan',
+    apellido: 'Pérez',
+    email: 'juan.perez@example.com',
     telefono: '+593981112223',
     activo: true
   };
@@ -68,8 +75,8 @@ async function testUsuarios() {
   );
 
   // (Opcional) Demostración de helpers del repo:
-  const porEmail = await usuarioRepository.findByEmail('kevin.lima@example.com');
-  console.log('\nBúsqueda por email (kevin.lima@example.com):', porEmail ? 'Encontrado' : 'No encontrado');
+  const porEmail = await usuarioRepository.findByEmail('juan.perez@example.com');
+  console.log('\nBúsqueda por email (juan.perez@example.com):', porEmail ? 'Encontrado' : 'No encontrado');
 
   const activos = await usuarioRepository.findActivos();
   console.log('Usuarios activos:', activos.length);

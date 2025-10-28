@@ -7,7 +7,11 @@ import type { DetalleReserva } from '../models/entities';
 
 export class DetalleReservaRepository extends BaseRepository<DetalleReserva> {
   constructor() {
-    super('idDetalle');
+    super(
+      'idDetalle',
+      'detalle_reserva',
+      ['idDetalle','idReserva','tipoServicio','idServicio','cantidad','precioUnitario','subtotal','fechaInicio','fechaFin','noches','dias','tramos']
+    );
   }
 
   async findByReserva(idReserva: string): Promise<DetalleReserva[]> {
