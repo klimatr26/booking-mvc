@@ -2,7 +2,13 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   define: {
-    'process.env': {},
+    // Definir process.env para que funcione en el navegador
+    'process.env': JSON.stringify({
+      DATA_BACKEND: 'memory',  // Usar memoria en lugar de PostgreSQL en el navegador
+      PGSSL: 'false',
+      PGSSL_REJECT_UNAUTHORIZED: 'false',
+      DATABASE_URL: ''
+    }),
     'global': 'globalThis',
   },
   server: {

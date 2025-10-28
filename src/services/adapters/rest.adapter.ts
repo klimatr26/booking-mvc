@@ -43,19 +43,32 @@ export async function searchSaborAndinoRest(fecha: string, personas: number, hor
     const mesas = await response.json();
     console.log('[REST Adapter] Mesas recibidas:', mesas.length, mesas);
     
-    const results: SearchResult[] = mesas.map((mesa: any) => ({
-      kind: 'restaurant' as const,
-      item: {
-        id: `saborandino-${mesa.id}`,
-        name: mesa.nombre || `Mesa #${mesa.numero || mesa.id}`,
-        city: 'Cuenca', // Sabor Andino está en Cuenca
-        price: mesa.precio || 0,
-        rating: 5,
-        photo: mesa.foto || '/assets/restaurant-placeholder.jpg',
-        cuisine: 'Ecuatoriana',
-        description: mesa.descripcion || `Capacidad: ${mesa.capacidad} personas`
-      }
-    }));
+    const results: SearchResult[] = mesas.map((mesa: any) => {
+      // Extraer ubicación del nombre (ej: "Mesa Terraza (5 personas)" -> "Terraza")
+      const nombreMatch = mesa.nombre?.match(/Mesa\s+(\w+)/);
+      const ubicacion = nombreMatch ? nombreMatch[1] : '';
+      
+      // Extraer capacidad del nombre (ej: "Mesa Terraza (5 personas)" -> 5)
+      const capacidadMatch = mesa.nombre?.match(/\((\d+)\s+personas?\)/);
+      const capacidad = capacidadMatch ? parseInt(capacidadMatch[1]) : 2;
+      
+      return {
+        kind: 'restaurant' as const,
+        item: {
+          id: `saborandino-${mesa.id}`,
+          name: mesa.nombre || `Mesa #${mesa.numero || mesa.id}`,
+          city: mesa.ciudad || 'Cuenca',
+          price: mesa.precio || 0,
+          rating: parseInt(mesa.clasificacion) || 5,
+          photo: mesa.foto || '/assets/restaurant-placeholder.jpg',
+          cuisine: 'Ecuatoriana',
+          description: mesa.descripcion || `Capacidad: ${capacidad} personas`,
+          // Campos extras para filtrado
+          tipo: ubicacion, // Ubicación extraída del nombre: Terraza, Afuera, Interior, VIP
+          capacidad: capacidad // Capacidad extraída del nombre
+        }
+      };
+    });
     
     console.log('[REST Adapter] Results mapeados:', results.length);
     return results;

@@ -43,10 +43,10 @@ app.post('/api/restaurants/saborandino/search', async (req, res) => {
     const { fecha, personas, hora } = req.body;
     
     // Sabor Andino usa buscarServicios con filtros VACÍOS (retorna todas las mesas)
-    // El servicio no soporta filtrado, retorna todo el catálogo
+    // El servicio no soporta filtrado en SOAP, se filtra en cliente
     const filtros = '';
     
-    console.log('[API] 📝 Filtros:', filtros === '' ? '(vacío - retorna todas las mesas)' : filtros);
+    console.log('[API] 📝 Búsqueda con parámetros:', { fecha, personas, hora });
     const servicios = await adapter.buscarServicios(filtros);
     console.log('[API] 📦 Servicios recibidos del adapter:', servicios.length);
     
@@ -55,16 +55,23 @@ app.post('/api/restaurants/saborandino/search', async (req, res) => {
     }
     
     // Transformar servicios a formato de mesas
-    const mesas = servicios.map(servicio => ({
+    let mesas = servicios.map(servicio => ({
       id: servicio.IdServicio,
       numero: servicio.IdServicio,
-      capacidad: personas || 2,
+      capacidad: personas || 2, // Sabor Andino no retorna capacidad, usar personas solicitadas
       precio: parseFloat(servicio.Precio) || 0,
       disponible: true,
       nombre: servicio.Nombre,
-      descripcion: servicio.Descripcion
+      tipo: servicio.Tipo, // Ubicación: Terraza, Afuera, Interior, VIP
+      descripcion: servicio.Descripcion,
+      ciudad: servicio.Ciudad,
+      clasificacion: servicio.Clasificacion,
+      foto: servicio.ImagenURL
     }));
-    
+
+    // NO filtrar por capacidad porque el servicio no la retorna
+    // Sabor Andino retorna todas las mesas disponibles
+
     console.log(`[API] ✅ ${mesas.length} mesas encontradas`);
     res.json(mesas);
     

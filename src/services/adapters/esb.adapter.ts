@@ -603,19 +603,49 @@ export async function esbSearchSaborAndino(filters?: any): Promise<SearchResult[
     console.log(`[ESB Adapter] ✅ Respuesta: ${mesas.length} mesas`);
     
     // Convertir a formato SearchResult
-    let resultados: SearchResult[] = mesas.map((m: any) => ({
-      kind: 'restaurant' as const,
-      item: {
-        id: `saborandino-${m.IdServicio || m.idServicio}`,
-        name: m.Nombre || m.nombre || `Mesa #${m.IdServicio}`,
-        city: m.Ciudad || m.ciudad || 'Guayaquil',
-        price: parseFloat(m.Precio || m.precio || 0),
-        rating: parseInt(m.Clasificacion || m.clasificacion || 5),
-        photo: m.ImagenURL || m.imagenUrl || '/restaurant-placeholder.jpg'
-      } as Restaurant
-    }));
+    let resultados: SearchResult[] = mesas.map((m: any) => {
+      const nombre = m.Nombre || m.nombre || `Mesa #${m.IdServicio}`;
+      
+      // Extraer ubicación del nombre (ej: "Mesa Terraza (5 personas)" -> "Terraza")
+      const nombreMatch = nombre.match(/Mesa\s+(\w+)/);
+      const ubicacion = nombreMatch ? nombreMatch[1] : '';
+      
+      // Extraer capacidad del nombre (ej: "Mesa Terraza (5 personas)" -> 5)
+      const capacidadMatch = nombre.match(/\((\d+)\s+personas?\)/);
+      const capacidad = capacidadMatch ? parseInt(capacidadMatch[1]) : 2;
+      
+      return {
+        kind: 'restaurant' as const,
+        item: {
+          id: `saborandino-${m.IdServicio || m.idServicio}`,
+          name: nombre,
+          city: m.Ciudad || m.ciudad || 'Guayaquil',
+          price: parseFloat(m.Precio || m.precio || 0),
+          rating: parseInt(m.Clasificacion || m.clasificacion || 5),
+          photo: m.ImagenURL || m.imagenUrl || '/restaurant-placeholder.jpg',
+          cuisine: 'Ecuatoriana',
+          description: m.Descripcion || m.descripcion,
+          tipo: ubicacion, // Ubicación extraída del nombre
+          capacidad: capacidad // Capacidad extraída del nombre
+        } as Restaurant
+      };
+    });
     
     // Aplicar filtros adicionales
+    if (filters?.ubicacion) {
+      resultados = resultados.filter(r => {
+        const tipo = (r.item as Restaurant).tipo || '';
+        return tipo.toLowerCase().includes(filters.ubicacion.toLowerCase());
+      });
+    }
+    
+    if (filters?.capacidad) {
+      resultados = resultados.filter(r => {
+        const capacidad = (r.item as Restaurant).capacidad || 2;
+        return capacidad >= filters.capacidad;
+      });
+    }
+    
     if (filters?.minPrecio) {
       resultados = resultados.filter(r => (r.item as Restaurant).price >= filters.minPrecio);
     }

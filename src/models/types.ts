@@ -14,6 +14,8 @@ export interface Restaurant {
   description?: string;
   policies?: string;
   rules?: string;
+  tipo?: string; // Ubicación de la mesa: Terraza, Afuera, Interior, VIP
+  capacidad?: number; // Capacidad de personas
 }
 
 export type SearchResult = { kind: ServiceKind; item: Hotel | Car | Flight | Restaurant };

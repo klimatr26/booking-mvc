@@ -106,10 +106,64 @@ export async function searchWeWorkHub(filters?: any): Promise<SearchResult[]> {
 export async function searchSaborAndino(filters?: any): Promise<SearchResult[]> {
   // Always use REST API
   const fecha = filters?.fecha || new Date().toISOString().split('T')[0];
-  const personas = filters?.personas || 2;
+  const personas = filters?.capacidad || filters?.personas || 2;
   const hora = filters?.hora;
   
-  return await restAdapter.searchSaborAndinoRest(fecha, personas, hora);
+  // Obtener todas las mesas
+  let results = await restAdapter.searchSaborAndinoRest(fecha, personas, hora);
+  
+  console.log('[Search Service] Mesas antes de filtrar:', results.length);
+  console.log('[Search Service] Filtros recibidos:', filters);
+  
+  // Aplicar filtros locales (solo si tienen valor)
+  if (filters?.ubicacion && filters.ubicacion !== '') {
+    console.log('[Search Service] Filtrando por ubicación:', filters.ubicacion);
+    const antes = results.length;
+    results = results.filter(r => {
+      const tipo = (r.item as any).tipo || '';
+      const match = tipo.toLowerCase().includes(filters.ubicacion.toLowerCase());
+      if (!match) {
+        console.log(`  - Mesa ${(r.item as any).name} tipo "${tipo}" NO coincide`);
+      }
+      return match;
+    });
+    console.log(`[Search Service] Después de filtrar ubicación: ${results.length} (antes: ${antes})`);
+  }
+  
+  if (filters?.capacidad && filters.capacidad > 0) {
+    console.log('[Search Service] Filtrando por capacidad:', filters.capacidad);
+    const antes = results.length;
+    results = results.filter(r => {
+      const capacidad = (r.item as any).capacidad || 2;
+      const match = capacidad >= filters.capacidad;
+      console.log(`  - Mesa ${(r.item as any).name} capacidad ${capacidad} ${match ? '✓ SI' : '✗ NO'} coincide con mínimo ${filters.capacidad}`);
+      return match;
+    });
+    console.log(`[Search Service] Después de filtrar capacidad: ${results.length} (antes: ${antes})`);
+  }
+  
+  if (filters?.minPrecio && filters.minPrecio > 0) {
+    console.log('[Search Service] Filtrando por precio mínimo:', filters.minPrecio);
+    const antes = results.length;
+    results = results.filter(r => {
+      const precio = (r.item as any).price || 0;
+      return precio >= filters.minPrecio;
+    });
+    console.log(`[Search Service] Después de filtrar precio mín: ${results.length} (antes: ${antes})`);
+  }
+  
+  if (filters?.maxPrecio && filters.maxPrecio > 0) {
+    console.log('[Search Service] Filtrando por precio máximo:', filters.maxPrecio);
+    const antes = results.length;
+    results = results.filter(r => {
+      const precio = (r.item as any).price || 0;
+      return precio <= filters.maxPrecio;
+    });
+    console.log(`[Search Service] Después de filtrar precio máx: ${results.length} (antes: ${antes})`);
+  }
+  
+  console.log('[Search Service] Mesas después de filtrar:', results.length);
+  return results;
 }
 
 export async function searchRestaurantGH(_filters?: any): Promise<SearchResult[]> {
