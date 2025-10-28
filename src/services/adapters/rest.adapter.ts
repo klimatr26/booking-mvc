@@ -1,7 +1,7 @@
 /**
  * REST API Adapter
  * En desarrollo: Llama al servidor backend (api.js) en localhost:3001
- * En producción: Usa directamente los adapters ESB (que usan proxy SOAP)
+ * En producción (Netlify): Usa Netlify Functions como backend
  */
 
 import type { SearchResult } from "../../models/types";
@@ -12,25 +12,21 @@ const isDevelopment = window.location.hostname === 'localhost' ||
 
 const API_URL = isDevelopment 
   ? (import.meta.env.VITE_PROXY_URL || 'http://localhost:3001')
-  : ''; // En producción usar ESB directamente
+  : '/.netlify/functions'; // En producción usar Netlify Functions
 
 /**
  * Buscar mesas en restaurante Sabor Andino
  */
 export async function searchSaborAndinoRest(fecha: string, personas: number, hora?: string): Promise<SearchResult[]> {
   try {
-    // En producción, usar ESB directamente
-    if (!isDevelopment) {
-      console.log('[REST Adapter] Modo producción - usando ESB directo');
-      const { esbSearchSaborAndino } = await import('./esb.adapter');
-      return await esbSearchSaborAndino({ fecha, personas, hora });
-    }
-
-    // En desarrollo, usar API REST local
-    console.log('[REST Adapter] Llamando a API:', `${API_URL}/api/restaurants/saborandino/search`);
+    const url = isDevelopment 
+      ? `${API_URL}/api/restaurants/saborandino/search`
+      : `${API_URL}/restaurant-search?company=saborandino`;
+    
+    console.log('[REST Adapter] Llamando a:', url);
     console.log('[REST Adapter] Datos:', { fecha, personas, hora });
     
-    const response = await fetch(`${API_URL}/api/restaurants/saborandino/search`, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fecha, personas, hora })

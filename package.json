@@ -12,6 +12,7 @@
     "proxy": "node server/proxy.js"
   },
   "devDependencies": {
+    "@netlify/functions": "^5.0.1",
     "@types/node": "^24.9.1",
     "@types/pg": "^8.15.6",
     "sass": "^1.93.2",
