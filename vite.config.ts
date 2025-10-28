@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  define: {
+    'process.env': {},
+    'global': 'globalThis',
+  },
   server: {
     fs: {
       // Solo permitir servir archivos de src, public y node_modules
@@ -13,6 +17,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     // Excluir módulos que no deben ser pre-bundled
-    exclude: []
+    exclude: ['pg']
   }
 });

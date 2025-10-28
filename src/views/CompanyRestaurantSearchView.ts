@@ -183,7 +183,7 @@ export function renderRestaurantResults(results: SearchResult[], container: HTML
     return `
       <div class="col-md-6 col-xl-4">
         <div class="card h-100 shadow-sm restaurant-card" style="transition: all 0.3s; cursor: pointer;">
-          <img src="${restaurant.photo}" class="card-img-top" alt="${restaurant.name}" style="height: 200px; object-fit: cover;">
+          <img src="${restaurant.photo || '/assets/restaurant-placeholder.jpg'}" class="card-img-top" alt="${restaurant.name}" style="height: 200px; object-fit: cover;">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start mb-2">
               <h5 class="card-title mb-0" style="font-size: 0.95rem;">${restaurant.name}</h5>

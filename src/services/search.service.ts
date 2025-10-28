@@ -1,53 +1,62 @@
 import type { FilterState, SearchResult, ServiceKind } from "../models/types";
 import { mockSearch } from "./adapters/mock.adapter";
-import { 
-  esbSearch, 
-  esbSearchEasyCar, 
-  esbSearchBackendCuenca, 
-  esbSearchCarCompany, 
-  esbSearchWeWorkHub, 
-  esbSearchKM25Madrid,
-  esbSearchSaborAndino,
-  esbSearchElCangrejoFeliz,
-  esbSearchSanctumCortejo,
-  esbSearchSieteMares
-} from "./adapters/esb.adapter";
+import * as restAdapter from "./adapters/rest.adapter";
 
 const USE_ESB = import.meta.env.VITE_USE_ESB === "true";
+const USE_REST = !USE_ESB; // Use REST API when ESB is disabled
+
+// Import ESB adapter dynamically only when needed
+const getESBAdapter = async () => {
+  if (!USE_ESB) return null;
+  return await import("./adapters/esb.adapter");
+};
 
 export async function searchAll(query: string, filters?: FilterState): Promise<SearchResult[]> {
-  const results = USE_ESB ? await esbSearch(query, filters) : await mockSearch(query);
+  if (USE_ESB) {
+    const esb = await getESBAdapter();
+    if (esb) {
+      const results = await esb.esbSearch(query, filters);
+      return applyFilters(results, filters);
+    }
+  }
+  const results = await mockSearch(query);
   return applyFilters(results, filters);
 }
 
 export async function searchEasyCar(filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
-  return await esbSearchEasyCar(filters);
+  const esb = await getESBAdapter();
+  return esb ? await esb.esbSearchEasyCar(filters) : [];
 }
 
 export async function searchBackendCuenca(filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
-  return await esbSearchBackendCuenca(filters);
+  const esb = await getESBAdapter();
+  return esb ? await esb.esbSearchBackendCuenca(filters) : [];
 }
 
 export async function searchCuencaCar(filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
-  return await esbSearchCarCompany("cuencaCar", filters);
+  const esb = await getESBAdapter();
+  return esb ? await esb.esbSearchCarCompany("cuencaCar", filters) : [];
 }
 
 export async function searchRentCar(filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
-  return await esbSearchCarCompany("autosRentCar", filters);
+  const esb = await getESBAdapter();
+  return esb ? await esb.esbSearchCarCompany("autosRentCar", filters) : [];
 }
 
 export async function searchRentaAutosMadrid(filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
-  return await esbSearchCarCompany("rentaAutosMadrid", filters);
+  const esb = await getESBAdapter();
+  return esb ? await esb.esbSearchCarCompany("rentaAutosMadrid", filters) : [];
 }
 
 export async function searchAlquilerAugye(filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
-  return await esbSearchCarCompany("alquilerAugye", filters);
+  const esb = await getESBAdapter();
+  return esb ? await esb.esbSearchCarCompany("alquilerAugye", filters) : [];
 }
 
 // ==================== HOTELES ====================
@@ -75,7 +84,8 @@ export async function searchMadrid25(_filters?: any): Promise<SearchResult[]> {
 
 export async function searchKM25Madrid(filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
-  return await esbSearchKM25Madrid(filters);
+  const esb = await getESBAdapter();
+  return esb ? await esb.esbSearchKM25Madrid(filters) : [];
 }
 
 export async function searchPetFriendly(_filters?: any): Promise<SearchResult[]> {
@@ -87,14 +97,19 @@ export async function searchPetFriendly(_filters?: any): Promise<SearchResult[]>
 
 export async function searchWeWorkHub(filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
-  return await esbSearchWeWorkHub(filters);
+  const esb = await getESBAdapter();
+  return esb ? await esb.esbSearchWeWorkHub(filters) : [];
 }
 
 // ==================== RESTAURANTES ====================
 
 export async function searchSaborAndino(filters?: any): Promise<SearchResult[]> {
-  if (!USE_ESB) return [];
-  return await esbSearchSaborAndino(filters);
+  // Always use REST API
+  const fecha = filters?.fecha || new Date().toISOString().split('T')[0];
+  const personas = filters?.personas || 2;
+  const hora = filters?.hora;
+  
+  return await restAdapter.searchSaborAndinoRest(fecha, personas, hora);
 }
 
 export async function searchRestaurantGH(_filters?: any): Promise<SearchResult[]> {
@@ -126,18 +141,27 @@ export async function searchCuencaFood(_filters?: any): Promise<SearchResult[]> 
 }
 
 export async function searchElCangrejoFeliz(filters?: any): Promise<SearchResult[]> {
-  if (!USE_ESB) return [];
-  return await esbSearchElCangrejoFeliz(filters);
+  const fecha = filters?.fecha || new Date().toISOString().split('T')[0];
+  const personas = filters?.personas || 2;
+  const hora = filters?.hora;
+  
+  return await restAdapter.searchElCangrejoFelizRest(fecha, personas, hora);
 }
 
 export async function searchSanctumCortejo(filters?: any): Promise<SearchResult[]> {
-  if (!USE_ESB) return [];
-  return await esbSearchSanctumCortejo(filters);
+  const fecha = filters?.fecha || new Date().toISOString().split('T')[0];
+  const personas = filters?.personas || 2;
+  const hora = filters?.hora;
+  
+  return await restAdapter.searchSanctumCortejoRest(fecha, personas, hora);
 }
 
 export async function searchSieteMares(filters?: any): Promise<SearchResult[]> {
-  if (!USE_ESB) return [];
-  return await esbSearchSieteMares(filters);
+  const fecha = filters?.fecha || new Date().toISOString().split('T')[0];
+  const personas = filters?.personas || 2;
+  const hora = filters?.hora;
+  
+  return await restAdapter.searchSieteMaresRest(fecha, personas, hora);
 }
 
 // ==================== VUELOS/AEROLÍNEAS ====================

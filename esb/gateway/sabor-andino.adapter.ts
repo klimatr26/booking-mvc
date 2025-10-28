@@ -110,12 +110,22 @@ export class SaborAndinoSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(
+    
+    // Get raw XML response instead of Document
+    const rawResponse = await this.callRaw(
       envelope,
       'http://SaborAndino.ec/Integracion/buscarServicios'
     );
 
-    return this.parseServiciosList(response);
+    console.log('[Sabor Andino] 📄 Raw XML Response length:', rawResponse.length);
+    console.log('[Sabor Andino] 🔍 First 500 chars:', rawResponse.substring(0, 500));
+    
+    // Count ServicioDTO elements with regex
+    const matches = rawResponse.match(/<ServicioDTO>/g);
+    const count = matches ? matches.length : 0;
+    console.log('[Sabor Andino] 📊 ServicioDTO elements found with regex:', count);
+
+    return this.parseServiciosListFromXml(rawResponse);
   }
 
   /**
@@ -272,6 +282,52 @@ export class SaborAndinoSoapAdapter extends SoapClient {
   // ============================================================================
   // Parser Methods
   // ============================================================================
+
+  /**
+   * Parsear lista de servicios desde XML crudo (raw string)
+   * Usa regex para extraer elementos ServicioDTO
+   */
+  private parseServiciosListFromXml(xmlString: string): ServicioDTO[] {
+    const servicios: ServicioDTO[] = [];
+    
+    // Extraer todos los bloques <ServicioDTO>...</ServicioDTO>
+    const servicioRegex = /<ServicioDTO>([\s\S]*?)<\/ServicioDTO>/g;
+    const matches = xmlString.matchAll(servicioRegex);
+    
+    for (const match of matches) {
+      const servicioXml = match[1]; // Contenido entre <ServicioDTO> y </ServicioDTO>
+      
+      const servicio: ServicioDTO = {
+        IdServicio: parseInt(this.extractXmlValue(servicioXml, 'IdServicio') || '0'),
+        Nombre: this.extractXmlValue(servicioXml, 'Nombre') || '',
+        Tipo: this.extractXmlValue(servicioXml, 'Tipo') || '',
+        Ciudad: this.extractXmlValue(servicioXml, 'Ciudad') || '',
+        Precio: this.extractXmlValue(servicioXml, 'Precio') || '0',
+        Clasificacion: this.extractXmlValue(servicioXml, 'Clasificacion') || '',
+        Descripcion: this.extractXmlValue(servicioXml, 'Descripcion') || '',
+        Politicas: this.extractXmlValue(servicioXml, 'Politicas') || '',
+        Reglas: this.extractXmlValue(servicioXml, 'Reglas') || '',
+        ImagenURL: this.extractXmlValue(servicioXml, 'ImagenURL') || ''
+      };
+      
+      servicios.push(servicio);
+    }
+    
+    console.log('[Sabor Andino] ✅ Parsed servicios:', servicios.length);
+    if (servicios.length > 0) {
+      console.log('[Sabor Andino] 🔍 First servicio:', servicios[0]);
+    }
+    return servicios;
+  }
+
+  /**
+   * Extrae el valor de un elemento XML usando regex
+   */
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
+  }
 
   /**
    * Parsear lista de servicios

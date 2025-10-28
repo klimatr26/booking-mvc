@@ -146,6 +146,44 @@ export class SoapClient {
   }
 
   /**
+   * Ejecuta una llamada SOAP y retorna el XML crudo (raw string)
+   */
+  async callRaw(soapEnvelope: string, soapAction?: string): Promise<string> {
+    if (!this.endpoint.enabled) {
+      throw new Error(`El endpoint ${this.endpoint.url} está deshabilitado`);
+    }
+
+    logger.info(`Llamada SOAP a ${this.endpoint.url}`, { soapAction });
+
+    // Si estamos en el navegador, usar el proxy
+    if (this.isBrowser()) {
+      throw new Error('callRaw no soportado en navegador, usar call() en su lugar');
+    }
+
+    // Si estamos en Node.js, llamada directa
+    const config: AxiosRequestConfig = {};
+    if (soapAction) {
+      config.headers = { 'SOAPAction': soapAction };
+    }
+
+    try {
+      const response = await this.axiosInstance.post('', soapEnvelope, config);
+      logger.info('Respuesta SOAP recibida exitosamente');
+      return response.data;
+    } catch (error: any) {
+      logger.error('Error en llamada SOAP', error);
+      
+      if (error.response) {
+        throw new Error(`Error HTTP ${error.response.status}: ${error.response.statusText}`);
+      } else if (error.request) {
+        throw new Error('No se recibió respuesta del servidor');
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  /**
    * Extrae un valor de texto de un nodo XML
    */
   protected getNodeText(doc: Document, tagName: string): string {
