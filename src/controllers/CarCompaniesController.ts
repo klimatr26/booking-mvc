@@ -42,11 +42,11 @@ const CAR_COMPANIES: CarCompany[] = [
   },
   {
     id: "alquileraugye",
-    name: "Alquiler Augye",
-    description: "Servicio de renta de autos con opciones personalizadas. (En integración)",
-    status: "62.5%",
-    functional: false,
-    vehicles: 8
+    name: "Alquiler Augye (AGQ/AGG)",
+    description: "🚗 Servicio de alquiler en Guayaquil y Quito. Amplia flota disponible. ✅ 100% Funcional",
+    status: "100%",
+    functional: true,
+    vehicles: 15
   }
 ];
 

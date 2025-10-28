@@ -31,26 +31,36 @@ export class SoapClient {
   private async callViaProxy(soapEnvelope: string, soapAction?: string): Promise<Document> {
     try {
       console.log('[SOAP Client] 🌐 Usando proxy para evitar CORS...');
+      console.log('[SOAP Client] 📡 Endpoint:', this.endpoint.url);
+      console.log('[SOAP Client] 📤 SOAPAction:', soapAction);
       
       // Detectar si estamos en desarrollo o producción
       const isDevelopment = window.location.hostname === 'localhost' || 
                            window.location.hostname === '127.0.0.1';
       
-      // URL del proxy según el entorno
+      // URL del proxy según el entorno - USA EL PROXY GENÉRICO DE SOAP
       const proxyUrl = isDevelopment 
-        ? 'http://localhost:3001/api/proxy/easycar'  // Desarrollo: Express local
-        : '/.netlify/functions/soap-proxy';           // Producción: Netlify Function
+        ? 'http://localhost:3001/api/proxy/soap'  // Desarrollo: Express local (proxy genérico)
+        : '/.netlify/functions/soap-proxy';        // Producción: Netlify Function
       
       console.log('[SOAP Client] Entorno:', isDevelopment ? 'Desarrollo' : 'Producción');
       console.log('[SOAP Client] Proxy URL:', proxyUrl);
       
+      // Preparar payload para el proxy genérico
+      const payload = {
+        url: this.endpoint.url,
+        soapAction: soapAction || '',
+        body: soapEnvelope
+      };
+      
+      console.log('[SOAP Client] 📦 Enviando al proxy...');
+      
       const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-          'SOAPAction': soapAction || ''
+          'Content-Type': 'application/json'
         },
-        body: soapEnvelope
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {

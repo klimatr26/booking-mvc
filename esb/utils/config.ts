@@ -137,7 +137,7 @@ export const defaultConfig: ESBConfig = {
       enabled: true
     },
     restaurant: {
-      url: 'http://sanctumcortejo.runasp.net/Ws_IntegracionRestaurante.asmx',
+      url: 'https://sanctumcortejo.runasp.net/Ws_IntegracionRestaurante.asmx',
       namespace: 'http://sanctumcortejo.ec/Integracion',
       timeout: 30000,
       enabled: true

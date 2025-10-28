@@ -1,6 +1,17 @@
 import type { FilterState, SearchResult, ServiceKind } from "../models/types";
 import { mockSearch } from "./adapters/mock.adapter";
-import { esbSearch, esbSearchEasyCar, esbSearchBackendCuenca, esbSearchCarCompany } from "./adapters/esb.adapter";
+import { 
+  esbSearch, 
+  esbSearchEasyCar, 
+  esbSearchBackendCuenca, 
+  esbSearchCarCompany, 
+  esbSearchWeWorkHub, 
+  esbSearchKM25Madrid,
+  esbSearchSaborAndino,
+  esbSearchElCangrejoFeliz,
+  esbSearchSanctumCortejo,
+  esbSearchSieteMares
+} from "./adapters/esb.adapter";
 
 const USE_ESB = import.meta.env.VITE_USE_ESB === "true";
 
@@ -62,11 +73,9 @@ export async function searchMadrid25(_filters?: any): Promise<SearchResult[]> {
   return [];
 }
 
-export async function searchKM25Madrid(_filters?: any): Promise<SearchResult[]> {
+export async function searchKM25Madrid(filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
-  // TODO: Implementar cuando esté disponible en ESB
-  console.warn('[Search Service] KM25 Madrid aún no implementado');
-  return [];
+  return await esbSearchKM25Madrid(filters);
 }
 
 export async function searchPetFriendly(_filters?: any): Promise<SearchResult[]> {
@@ -76,7 +85,17 @@ export async function searchPetFriendly(_filters?: any): Promise<SearchResult[]>
   return [];
 }
 
+export async function searchWeWorkHub(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchWeWorkHub(filters);
+}
+
 // ==================== RESTAURANTES ====================
+
+export async function searchSaborAndino(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchSaborAndino(filters);
+}
 
 export async function searchRestaurantGH(_filters?: any): Promise<SearchResult[]> {
   if (!USE_ESB) return [];
@@ -104,6 +123,21 @@ export async function searchCuencaFood(_filters?: any): Promise<SearchResult[]> 
   // TODO: Implementar cuando esté disponible en ESB
   console.warn('[Search Service] Cuenca Food aún no implementado');
   return [];
+}
+
+export async function searchElCangrejoFeliz(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchElCangrejoFeliz(filters);
+}
+
+export async function searchSanctumCortejo(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchSanctumCortejo(filters);
+}
+
+export async function searchSieteMares(filters?: any): Promise<SearchResult[]> {
+  if (!USE_ESB) return [];
+  return await esbSearchSieteMares(filters);
 }
 
 // ==================== VUELOS/AEROLÍNEAS ====================

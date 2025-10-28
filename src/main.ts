@@ -17,6 +17,7 @@ import { CompanyCarSearchController } from "./controllers/CompanyCarSearchContro
 import { HotelCompaniesController } from "./controllers/HotelCompaniesController";
 import { CompanyHotelSearchController } from "./controllers/CompanyHotelSearchController";
 import { RestaurantCompaniesController } from "./controllers/RestaurantCompaniesController";
+import { CompanyRestaurantSearchController } from "./controllers/CompanyRestaurantSearchController";
 import { AirlineCompaniesController } from "./controllers/AirlineCompaniesController";
 
 export const router = new Router();
@@ -89,27 +90,47 @@ router.register("/hotels/petfriendly", () => {
   const ctrl = new CompanyHotelSearchController("petfriendly");
   ctrl.mount(document.getElementById("view")!);
 });
+router.register("/hotels/weworkhub", () => {
+  const ctrl = new CompanyHotelSearchController("weworkhub");
+  ctrl.mount(document.getElementById("view")!);
+});
 
 // ==================== RESTAURANTES ====================
 router.register("/restaurants", () => {
   const ctrl = new RestaurantCompaniesController();
   ctrl.mount(document.getElementById("view")!);
 });
+router.register("/restaurants/saborandino", () => {
+  const ctrl = new CompanyRestaurantSearchController("saborandino");
+  ctrl.mount(document.getElementById("view")!);
+});
+router.register("/restaurants/elcangrejofeliz", () => {
+  const ctrl = new CompanyRestaurantSearchController("elcangrejofeliz");
+  ctrl.mount(document.getElementById("view")!);
+});
+router.register("/restaurants/sanctumcortejo", () => {
+  const ctrl = new CompanyRestaurantSearchController("sanctumcortejo");
+  ctrl.mount(document.getElementById("view")!);
+});
+router.register("/restaurants/sietemares", () => {
+  const ctrl = new CompanyRestaurantSearchController("sietemares");
+  ctrl.mount(document.getElementById("view")!);
+});
 router.register("/restaurants/restaurantgh", () => {
-  const view = document.getElementById("view")!;
-  view.innerHTML = '<div class="container py-5"><h2>🍽️ Restaurant GH</h2><p>Próximamente...</p></div>';
+  const ctrl = new CompanyRestaurantSearchController("restaurantgh");
+  ctrl.mount(document.getElementById("view")!);
 });
 router.register("/restaurants/madrfood", () => {
-  const view = document.getElementById("view")!;
-  view.innerHTML = '<div class="container py-5"><h2>🍽️ MadrFood</h2><p>Próximamente...</p></div>';
+  const ctrl = new CompanyRestaurantSearchController("madrfood");
+  ctrl.mount(document.getElementById("view")!);
 });
 router.register("/restaurants/foodkm25", () => {
-  const view = document.getElementById("view")!;
-  view.innerHTML = '<div class="container py-5"><h2>🍽️ Food KM25</h2><p>Próximamente...</p></div>';
+  const ctrl = new CompanyRestaurantSearchController("foodkm25");
+  ctrl.mount(document.getElementById("view")!);
 });
 router.register("/restaurants/cuencafood", () => {
-  const view = document.getElementById("view")!;
-  view.innerHTML = '<div class="container py-5"><h2>🍽️ Cuenca Food</h2><p>Próximamente...</p></div>';
+  const ctrl = new CompanyRestaurantSearchController("cuencafood");
+  ctrl.mount(document.getElementById("view")!);
 });
 
 // ==================== VUELOS ====================
