@@ -8,10 +8,14 @@ import type { Servicio } from '../models/entities';
 
 export class ServicioRepository extends BaseRepository<Servicio> {
   constructor() {
-    super('idServicio');
+    super(
+      'idServicio',
+      'servicio',
+      ['idServicio','serviceType','nombre','descripcion','ciudad','precio','currency','rating','amenities','clasificacion','fotos','politicas','disponible','datosEspecificos']
+    );
   }
 
-  async findByTipo(serviceType: 'hotel' | 'car' | 'flight' | 'restaurant' | 'package'): Promise<Servicio[]> {
+  async findByTipo(serviceType: 'hotel'|'car'|'flight'|'restaurant'|'package'): Promise<Servicio[]> {
     return this.findByField('serviceType', serviceType);
   }
 

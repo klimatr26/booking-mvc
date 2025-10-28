@@ -7,7 +7,11 @@ import type { Reserva } from '../models/entities';
 
 export class ReservaRepository extends BaseRepository<Reserva> {
   constructor() {
-    super('idReserva');
+    super(
+      'idReserva',
+      'reserva',
+      ['idReserva','idUsuario','fechaReserva','estado','totalPrice','currency'] // OJO: sin 'detalles' ni 'pagos'
+    );
   }
 
   async findByUsuario(idUsuario: string): Promise<Reserva[]> {

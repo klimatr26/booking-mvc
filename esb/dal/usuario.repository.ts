@@ -7,17 +7,20 @@ import type { Usuario } from '../models/entities';
 
 export class UsuarioRepository extends BaseRepository<Usuario> {
   constructor() {
-    super('idUsuario');
+    super(
+      'idUsuario',
+      'usuario',
+      ['idUsuario','nombre','apellido','email','telefono','fechaRegistro','activo']
+    );
   }
 
   async findByEmail(email: string): Promise<Usuario | null> {
-    const usuarios = await this.findAll();
-    return usuarios.find(u => u.email === email) || null;
+    const usuarios = await this.findByField('email', email);
+    return usuarios[0] ?? null;
   }
 
   async findActivos(): Promise<Usuario[]> {
-    const usuarios = await this.findAll();
-    return usuarios.filter(u => u.activo);
+    return this.findByField('activo', true as any);
   }
 }
 
