@@ -108,6 +108,15 @@ export class CompanyHotelSearchController {
         case 'weworkhub':
           results = await searchService.searchWeWorkHub(filters);
           break;
+        case 'hotelperros':
+          results = await searchService.searchHotelPerros(filters);
+          break;
+        case 'hoteluio':
+          results = await searchService.searchHotelUIO(filters);
+          break;
+        case 'hotelboutique':
+          results = await searchService.searchHotelBoutique(filters);
+          break;
         default:
           console.error(`[CompanyHotelSearchController] Compañía no soportada: ${this.companyId}`);
       }

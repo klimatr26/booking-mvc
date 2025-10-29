@@ -78,8 +78,8 @@ export class RentaAutosMadridSoapAdapter extends SoapClient {
   async ping(): Promise<string> {
     const soapBody = `<Ping xmlns="http://rentaautos.es/integracion"/>`;
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://rentaautos.es/integracion/Ping');
-    return this.getNodeText(response, 'PingResult');
+    const rawResponse = await this.callRaw(envelope, 'http://rentaautos.es/integracion/Ping');
+    return this.extractXmlValue(rawResponse, 'PingResult') || 'Pong';
   }
 
   /**
@@ -106,8 +106,9 @@ export class RentaAutosMadridSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://rentaautos.es/integracion/BuscarServicios');
-    return this.parseServicioList(response);
+    const rawResponse = await this.callRaw(envelope, 'http://rentaautos.es/integracion/BuscarServicios');
+    console.log('[Renta Autos Madrid] Raw XML Response length:', rawResponse.length);
+    return this.parseServiciosFromXml(rawResponse);
   }
 
   /**
@@ -122,8 +123,12 @@ export class RentaAutosMadridSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://rentaautos.es/integracion/ObtenerDetalleServicio');
-    return this.parseServicio(response);
+    const rawResponse = await this.callRaw(envelope, 'http://rentaautos.es/integracion/ObtenerDetalleServicio');
+    const servicios = this.parseServiciosFromXml(rawResponse);
+    if (servicios.length === 0) {
+      throw new Error('Servicio no encontrado');
+    }
+    return servicios[0];
   }
 
   /**
@@ -146,10 +151,10 @@ export class RentaAutosMadridSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://rentaautos.es/integracion/VerificarDisponibilidad');
+    const rawResponse = await this.callRaw(envelope, 'http://rentaautos.es/integracion/VerificarDisponibilidad');
     
-    const result = this.getNodeText(response, 'VerificarDisponibilidadResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'VerificarDisponibilidadResult');
+    return result?.toLowerCase() === 'true';
   }
 
   /**
@@ -166,8 +171,8 @@ export class RentaAutosMadridSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://rentaautos.es/integracion/CotizarReserva');
-    return this.parseCotizacion(response);
+    const rawResponse = await this.callRaw(envelope, 'http://rentaautos.es/integracion/CotizarReserva');
+    return this.parseCotizacionFromXml(rawResponse);
   }
 
   /**
@@ -192,8 +197,8 @@ export class RentaAutosMadridSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://rentaautos.es/integracion/CrearPreReserva');
-    return this.parsePreReserva(response);
+    const rawResponse = await this.callRaw(envelope, 'http://rentaautos.es/integracion/CrearPreReserva');
+    return this.parsePreReservaFromXml(rawResponse);
   }
 
   /**
@@ -214,10 +219,10 @@ export class RentaAutosMadridSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://rentaautos.es/integracion/ConfirmarReserva');
+    const rawResponse = await this.callRaw(envelope, 'http://rentaautos.es/integracion/ConfirmarReserva');
     
-    const result = this.getNodeText(response, 'ConfirmarReservaResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'ConfirmarReservaResult');
+    return result?.toLowerCase() === 'true';
   }
 
   /**
@@ -233,87 +238,94 @@ export class RentaAutosMadridSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://rentaautos.es/integracion/CancelarReservaIntegracion');
+    const rawResponse = await this.callRaw(envelope, 'http://rentaautos.es/integracion/CancelarReservaIntegracion');
     
-    const result = this.getNodeText(response, 'CancelarReservaIntegracionResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'CancelarReservaIntegracionResult');
+    return result?.toLowerCase() === 'true';
   }
 
-  // ==================== Parsers ====================
+  // ==================== Parsers con Regex ====================
 
-  private parseServicioList(doc: Document): ServicioDTO[] {
+  /**
+   * Parse list of servicios (autos) from XML using regex
+   */
+  private parseServiciosFromXml(xmlString: string): ServicioDTO[] {
     const servicios: ServicioDTO[] = [];
-    const nodes = doc.getElementsByTagName('ServicioDTO');
+    const regex = /<ServicioDTO>([\s\S]*?)<\/ServicioDTO>/g;
+    const matches = xmlString.matchAll(regex);
 
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      servicios.push(this.parseServicioNode(node));
+    for (const match of matches) {
+      const servicioXml = match[1];
+      
+      // Parse imagenes array
+      const imagenes: string[] = [];
+      const imagenesRegex = /<string>(.*?)<\/string>/g;
+      const imagenesMatches = servicioXml.matchAll(imagenesRegex);
+      for (const imgMatch of imagenesMatches) {
+        imagenes.push(imgMatch[1]);
+      }
+
+      servicios.push({
+        Id: parseInt(this.extractXmlValue(servicioXml, 'Id') || '0') || 0,
+        Nombre: this.extractXmlValue(servicioXml, 'Nombre') || '',
+        Categoria: this.extractXmlValue(servicioXml, 'Categoria') || '',
+        Gearbox: this.extractXmlValue(servicioXml, 'Gearbox') || '',
+        Ciudad: this.extractXmlValue(servicioXml, 'Ciudad') || '',
+        Precio: parseFloat(this.extractXmlValue(servicioXml, 'Precio') || '0') || 0,
+        Hotel: this.extractXmlValue(servicioXml, 'Hotel') || '',
+        Disponible: this.extractXmlValue(servicioXml, 'Disponible')?.toLowerCase() === 'true',
+        Imagenes: imagenes
+      });
     }
 
+    console.log(`[Renta Autos Madrid] Parsed ${servicios.length} servicios from XML`);
     return servicios;
   }
 
-  private parseServicio(doc: Document): ServicioDTO {
-    const result = doc.getElementsByTagName('ObtenerDetalleServicioResult')[0];
-    return this.parseServicioNode(result);
-  }
-
-  private parseServicioNode(node: Element): ServicioDTO {
-    const imagenes: string[] = [];
-    const imagenesNode = node.getElementsByTagName('Imagenes')[0];
-    if (imagenesNode) {
-      const stringNodes = imagenesNode.getElementsByTagName('string');
-      for (let i = 0; i < stringNodes.length; i++) {
-        imagenes.push(stringNodes[i].textContent || '');
-      }
-    }
-
-    return {
-      Id: parseInt(this.getChildText(node, 'Id')) || 0,
-      Nombre: this.getChildText(node, 'Nombre'),
-      Categoria: this.getChildText(node, 'Categoria'),
-      Gearbox: this.getChildText(node, 'Gearbox'),
-      Ciudad: this.getChildText(node, 'Ciudad'),
-      Precio: parseFloat(this.getChildText(node, 'Precio')) || 0,
-      Hotel: this.getChildText(node, 'Hotel'),
-      Disponible: this.getChildText(node, 'Disponible').toLowerCase() === 'true',
-      Imagenes: imagenes
-    };
-  }
-
-  private parseCotizacion(doc: Document): CotizacionDTO {
+  /**
+   * Parse cotización from XML using regex
+   */
+  private parseCotizacionFromXml(xmlString: string): CotizacionDTO {
     const detalles: DetalleCotizacionDTO[] = [];
-    const detalleNodes = doc.getElementsByTagName('DetalleCotizacionDTO');
-    
-    for (let i = 0; i < detalleNodes.length; i++) {
-      const node = detalleNodes[i];
+    const detalleRegex = /<DetalleCotizacionDTO>([\s\S]*?)<\/DetalleCotizacionDTO>/g;
+    const detalleMatches = xmlString.matchAll(detalleRegex);
+
+    for (const match of detalleMatches) {
+      const detalleXml = match[1];
       detalles.push({
-        Descripcion: this.getChildText(node, 'Descripcion'),
-        Dias: parseInt(this.getChildText(node, 'Dias')) || 0,
-        PrecioDia: parseFloat(this.getChildText(node, 'PrecioDia')) || 0
+        Descripcion: this.extractXmlValue(detalleXml, 'Descripcion') || '',
+        Dias: parseInt(this.extractXmlValue(detalleXml, 'Dias') || '0') || 0,
+        PrecioDia: parseFloat(this.extractXmlValue(detalleXml, 'PrecioDia') || '0') || 0
       });
     }
 
     return {
-      Total: parseFloat(this.getNodeText(doc, 'Total')) || 0,
-      Impuesto: parseFloat(this.getNodeText(doc, 'Impuesto')) || 0,
-      Subtotal: parseFloat(this.getNodeText(doc, 'Subtotal')) || 0,
-      Dias: parseInt(this.getNodeText(doc, 'Dias')) || 0,
+      Total: parseFloat(this.extractXmlValue(xmlString, 'Total') || '0') || 0,
+      Impuesto: parseFloat(this.extractXmlValue(xmlString, 'Impuesto') || '0') || 0,
+      Subtotal: parseFloat(this.extractXmlValue(xmlString, 'Subtotal') || '0') || 0,
+      Dias: parseInt(this.extractXmlValue(xmlString, 'Dias') || '0') || 0,
       Detalle: detalles
     };
   }
 
-  private parsePreReserva(doc: Document): PreReservaDTO {
+  /**
+   * Parse pre-reserva from XML using regex
+   */
+  private parsePreReservaFromXml(xmlString: string): PreReservaDTO {
     return {
-      PreBookingId: parseInt(this.getNodeText(doc, 'PreBookingId')) || 0,
-      ExpiraEn: this.getNodeText(doc, 'ExpiraEn'),
-      Exito: this.getNodeText(doc, 'Exito').toLowerCase() === 'true',
-      Mensaje: this.getNodeText(doc, 'Mensaje')
+      PreBookingId: parseInt(this.extractXmlValue(xmlString, 'PreBookingId') || '0') || 0,
+      ExpiraEn: this.extractXmlValue(xmlString, 'ExpiraEn') || '',
+      Exito: this.extractXmlValue(xmlString, 'Exito')?.toLowerCase() === 'true',
+      Mensaje: this.extractXmlValue(xmlString, 'Mensaje') || ''
     };
   }
 
-  private getChildText(parent: Element, tagName: string): string {
-    const child = parent.getElementsByTagName(tagName)[0];
-    return child?.textContent || '';
+  /**
+   * Extract value from XML tag using regex
+   */
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
   }
 }

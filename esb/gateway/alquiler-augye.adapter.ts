@@ -110,6 +110,8 @@ export class AlquilerAugyeSoapAdapter extends SoapClient {
    * 1. buscarServicios - Búsqueda unificada por filtros
    */
   async buscarServicios(filtros: FiltrosAutosDTO): Promise<ServicioAutoResumenDTO[]> {
+    console.log('[Alquiler Augye] 🔍 Parámetros recibidos:', filtros);
+    
     const soapBody = `
       <buscarServicios xmlns="http://tuservidor.com/booking/autos">
         <filtros>
@@ -131,8 +133,22 @@ export class AlquilerAugyeSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://tuservidor.com/booking/autos/buscarServicios');
-    return this.parseServiciosResumen(response);
+    
+    try {
+      // Usar callRaw() para obtener XML como string
+      const rawResponse = await this.callRaw(envelope, 'http://tuservidor.com/booking/autos/buscarServicios');
+      console.log('[Alquiler Augye] 📄 Raw XML Response length:', rawResponse.length);
+      console.log('[Alquiler Augye] 📄 Raw XML Response:', rawResponse.substring(0, 1000)); // Primeros 1000 caracteres
+      
+      // Contar elementos usando regex
+      const matches = rawResponse.match(/<ServicioAutoResumen>/g);
+      console.log('[Alquiler Augye] 🚗 ServicioAutoResumen elements found:', matches ? matches.length : 0);
+      
+      return this.parseServiciosResumenFromXml(rawResponse);
+    } catch (error: any) {
+      console.error('[Alquiler Augye] ❌ Error en buscarServicios:', error.message);
+      throw error;
+    }
   }
 
   /**
@@ -286,6 +302,52 @@ export class AlquilerAugyeSoapAdapter extends SoapClient {
   }
 
   // ==================== Parsers ====================
+
+  /**
+   * Parsear lista de servicios desde XML crudo (raw string)
+   * Usa regex para extraer elementos ServicioAutoResumen
+   */
+  private parseServiciosResumenFromXml(xmlString: string): ServicioAutoResumenDTO[] {
+    const servicios: ServicioAutoResumenDTO[] = [];
+    
+    // Extraer todos los bloques <ServicioAutoResumen>...</ServicioAutoResumen>
+    const servicioRegex = /<ServicioAutoResumen>([\s\S]*?)<\/ServicioAutoResumen>/g;
+    const matches = xmlString.matchAll(servicioRegex);
+    
+    for (const match of matches) {
+      const servicioXml = match[1]; // Contenido entre tags
+      
+      const servicio: ServicioAutoResumenDTO = {
+        sku: parseInt(this.extractXmlValue(servicioXml, 'sku') || '0'),
+        marca: this.extractXmlValue(servicioXml, 'marca') || '',
+        modelo: this.extractXmlValue(servicioXml, 'modelo') || '',
+        categoria: this.extractXmlValue(servicioXml, 'categoria') || '',
+        gearbox: this.extractXmlValue(servicioXml, 'gearbox') || '',
+        precioDia: parseFloat(this.extractXmlValue(servicioXml, 'precioDia') || '0'),
+        ciudad: this.extractXmlValue(servicioXml, 'ciudad') || '',
+        imagen: this.extractXmlValue(servicioXml, 'imagen') || ''
+      };
+      
+      servicios.push(servicio);
+    }
+    
+    console.log('[Alquiler Augye] ✅ Parsed servicios:', servicios.length);
+    if (servicios.length > 0) {
+      console.log('[Alquiler Augye] 🔍 First servicio:', servicios[0]);
+    }
+    return servicios;
+  }
+
+  /**
+   * Extrae el valor de un elemento XML usando regex
+   */
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
+  }
+
+  // ==================== Parsers (DOM-based - legacy) ====================
 
   private parseServiciosResumen(doc: Document): ServicioAutoResumenDTO[] {
     const servicios: ServicioAutoResumenDTO[] = [];

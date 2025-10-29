@@ -3,6 +3,7 @@
  */
 
 const AIRLINE_COMPANIES = [
+  { id: "skyandes", name: "✈️ SkyAndes", status: "100%", functional: true, routes: 0, description: "Vuelos nacionales en Ecuador (Quito-Guayaquil)" },
   { id: "madridair25", name: "Madrid Air 25", status: "100%", functional: true, routes: 25, description: "Vuelos nacionales e internacionales desde Madrid" },
   { id: "flyuio", name: "Fly UIO", status: "75%", functional: false, routes: 15, description: "Aerolínea ecuatoriana con base en Quito" },
   { id: "skyconnect", name: "Sky Connect", status: "62.5%", functional: false, routes: 30, description: "Conexiones aéreas europeas" },

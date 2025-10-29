@@ -19,9 +19,9 @@ const CAR_COMPANIES: CarCompany[] = [
   {
     id: "cuencacar",
     name: "Cuenca Car Rental",
-    description: "Alquiler de vehículos en Cuenca. Opciones económicas y flexibles. (En integración)",
-    status: "87.5%",
-    functional: false,
+    description: "Alquiler de vehículos en Cuenca. Opciones económicas y flexibles. ✅ 100% Funcional",
+    status: "100%",
+    functional: true,
     vehicles: 5
   },
   {
@@ -34,10 +34,10 @@ const CAR_COMPANIES: CarCompany[] = [
   },
   {
     id: "rentaautosmadrid",
-    name: "Renta Autos Madrid",
-    description: "Servicio español de alquiler. Vehículos europeos de calidad. (En integración)",
-    status: "75%",
-    functional: false,
+    name: "🇪🇸 Renta Autos Madrid",
+    description: "Servicio español de alquiler. Vehículos europeos con transmisión manual y automática. ✅ 100% Funcional",
+    status: "100%",
+    functional: true,
     vehicles: 10
   },
   {

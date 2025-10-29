@@ -158,8 +158,58 @@ export class HotelPerrosSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://hotelperros.com/integracion/buscarServicios');
-    return this.parseBusquedaResult(response);
+    const rawResponse = await this.callRaw(envelope, 'http://hotelperros.com/integracion/buscarServicios');
+    console.log('[Hotel Perros] Raw XML Response length:', rawResponse.length);
+    
+    // Count elements for debugging
+    const matches = rawResponse.match(/<ServicioResumenDto>/g);
+    console.log('[Hotel Perros] ServicioResumenDto elements found:', matches ? matches.length : 0);
+    
+    return this.parseBusquedaResultFromXml(rawResponse);
+  }
+
+  // Regex-based XML parsing for buscarServicios
+  private parseBusquedaResultFromXml(xmlString: string): ResultadoDto<ServicioResumenDto[]> {
+    // Extract Ok, Mensaje, Codigo
+    const ok = this.extractXmlValue(xmlString, 'Ok') === 'true';
+    const mensaje = this.extractXmlValue(xmlString, 'Mensaje') || '';
+    const codigo = this.extractXmlValue(xmlString, 'Codigo') || '';
+    
+    const servicios: ServicioResumenDto[] = [];
+    
+    // Extract all ServicioResumenDto elements
+    const regex = /<ServicioResumenDto>([\s\S]*?)<\/ServicioResumenDto>/g;
+    const matches = xmlString.matchAll(regex);
+    
+    for (const match of matches) {
+      const servicioXml = match[1];
+      
+      const servicio: ServicioResumenDto = {
+        Sku: this.extractXmlValue(servicioXml, 'Sku') || '',
+        Nombre: this.extractXmlValue(servicioXml, 'Nombre') || '',
+        TarifaBaseNoche: parseFloat(this.extractXmlValue(servicioXml, 'TarifaBaseNoche') || '0') || 0,
+        Disponible: this.extractXmlValue(servicioXml, 'Disponible') === 'true',
+        Moneda: this.extractXmlValue(servicioXml, 'Moneda') || 'USD'
+      };
+      
+      servicios.push(servicio);
+    }
+    
+    console.log('[Hotel Perros] Parsed services:', servicios.length);
+    
+    return {
+      Ok: ok,
+      Mensaje: mensaje,
+      Codigo: codigo,
+      Data: servicios
+    };
+  }
+
+  // Helper method to extract XML tag values using regex
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
   }
 
   /**

@@ -63,16 +63,10 @@ export class SkyAndesFlightSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://skyandes.com/integracion/buscarServicios"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://skyandes.com/integracion/buscarServicios"');
     
-    const flights: DTO_Flight[] = [];
-    const items = xml.getElementsByTagName('DTOFlight');
-    
-    for (let i = 0; i < items.length; i++) {
-      flights.push(this.parseFlightFromElement(items[i]));
-    }
-    
-    return flights;
+    console.log('[SkyAndes] Raw XML Response length:', rawResponse.length);
+    return this.parseFlightListFromXml(rawResponse);
   }
 
   /**
@@ -86,12 +80,13 @@ export class SkyAndesFlightSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://skyandes.com/integracion/obtenerDetalleServicio"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://skyandes.com/integracion/obtenerDetalleServicio"');
     
-    const resultElement = xml.getElementsByTagName('obtenerDetalleServicioResult')[0];
-    if (!resultElement) throw new Error('No se encontró el resultado del servicio');
+    console.log('[SkyAndes] Raw XML Response length:', rawResponse.length);
+    const flights = this.parseFlightListFromXml(rawResponse);
+    if (flights.length === 0) throw new Error('No se encontró el resultado del servicio');
     
-    return this.parseFlightFromElement(resultElement);
+    return flights[0];
   }
 
   /**
@@ -113,10 +108,10 @@ export class SkyAndesFlightSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://skyandes.com/integracion/verificarDisponibilidad"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://skyandes.com/integracion/verificarDisponibilidad"');
     
-    const result = this.getTagValue(xml, 'verificarDisponibilidadResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'verificarDisponibilidadResult');
+    return result?.toLowerCase() === 'true';
   }
 
   /**
@@ -131,13 +126,13 @@ export class SkyAndesFlightSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://skyandes.com/integracion/cotizarReserva"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://skyandes.com/integracion/cotizarReserva"');
     
     return {
-      Total: parseFloat(this.getTagValue(xml, 'Total') || '0'),
-      Impuestos: parseFloat(this.getTagValue(xml, 'Impuestos') || '0'),
-      BasePrice: parseFloat(this.getTagValue(xml, 'BasePrice') || '0'),
-      PromoDiscount: parseFloat(this.getTagValue(xml, 'PromoDiscount') || '0')
+      Total: parseFloat(this.extractXmlValue(rawResponse, 'Total') || '0'),
+      Impuestos: parseFloat(this.extractXmlValue(rawResponse, 'Impuestos') || '0'),
+      BasePrice: parseFloat(this.extractXmlValue(rawResponse, 'BasePrice') || '0'),
+      PromoDiscount: parseFloat(this.extractXmlValue(rawResponse, 'PromoDiscount') || '0')
     };
   }
 
@@ -160,11 +155,11 @@ export class SkyAndesFlightSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://skyandes.com/integracion/crearPreReserva"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://skyandes.com/integracion/crearPreReserva"');
     
     return {
-      PreBookingId: parseInt(this.getTagValue(xml, 'PreBookingId') || '0'),
-      ExpiraEn: new Date(this.getTagValue(xml, 'ExpiraEn') || '')
+      PreBookingId: parseInt(this.extractXmlValue(rawResponse, 'PreBookingId') || '0'),
+      ExpiraEn: new Date(this.extractXmlValue(rawResponse, 'ExpiraEn') || '')
     };
   }
 
@@ -187,11 +182,11 @@ export class SkyAndesFlightSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://skyandes.com/integracion/confirmarReserva"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://skyandes.com/integracion/confirmarReserva"');
     
     return {
-      BookingId: parseInt(this.getTagValue(xml, 'BookingId') || '0'),
-      Estado: this.getTagValue(xml, 'Estado') || ''
+      BookingId: parseInt(this.extractXmlValue(rawResponse, 'BookingId') || '0'),
+      Estado: this.extractXmlValue(rawResponse, 'Estado') || ''
     };
   }
 
@@ -207,32 +202,52 @@ export class SkyAndesFlightSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://skyandes.com/integracion/cancelarReservaIntegracion"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://skyandes.com/integracion/cancelarReservaIntegracion"');
     
-    const result = this.getTagValue(xml, 'cancelarReservaIntegracionResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'cancelarReservaIntegracionResult');
+    return result?.toLowerCase() === 'true';
   }
 
   // ==================== Helpers de Parseo ====================
 
-  private parseFlightFromElement(element: Element | Document): DTO_Flight {
-    return {
-      FlightId: parseInt(this.getTagValue(element, 'FlightId') || '0'),
-      OriginId: parseInt(this.getTagValue(element, 'OriginId') || '0'),
-      DestinationId: parseInt(this.getTagValue(element, 'DestinationId') || '0'),
-      Airline: this.getTagValue(element, 'Airline') || '',
-      FlightNumber: this.getTagValue(element, 'FlightNumber') || '',
-      DepartureTime: new Date(this.getTagValue(element, 'DepartureTime') || ''),
-      ArrivalTime: new Date(this.getTagValue(element, 'ArrivalTime') || ''),
-      Duration: this.getTagValue(element, 'Duration') || '',
-      CancellationPolicy: this.getTagValue(element, 'CancellationPolicy') || '',
-      CabinClass: this.getTagValue(element, 'CabinClass') || '',
-      AircraftId: parseInt(this.getTagValue(element, 'AircraftId') || '0')
-    };
+  /**
+   * Parsea lista de vuelos desde XML usando regex
+   */
+  private parseFlightListFromXml(xmlString: string): DTO_Flight[] {
+    const flights: DTO_Flight[] = [];
+    const regex = /<DTOFlight>([\s\S]*?)<\/DTOFlight>/g;
+    const matches = xmlString.matchAll(regex);
+
+    for (const match of matches) {
+      const flightXml = match[1];
+      
+      const flight: DTO_Flight = {
+        FlightId: parseInt(this.extractXmlValue(flightXml, 'FlightId') || '0'),
+        OriginId: parseInt(this.extractXmlValue(flightXml, 'OriginId') || '0'),
+        DestinationId: parseInt(this.extractXmlValue(flightXml, 'DestinationId') || '0'),
+        Airline: this.extractXmlValue(flightXml, 'Airline') || '',
+        FlightNumber: this.extractXmlValue(flightXml, 'FlightNumber') || '',
+        DepartureTime: new Date(this.extractXmlValue(flightXml, 'DepartureTime') || ''),
+        ArrivalTime: new Date(this.extractXmlValue(flightXml, 'ArrivalTime') || ''),
+        Duration: this.extractXmlValue(flightXml, 'Duration') || '',
+        CancellationPolicy: this.extractXmlValue(flightXml, 'CancellationPolicy') || '',
+        CabinClass: this.extractXmlValue(flightXml, 'CabinClass') || '',
+        AircraftId: parseInt(this.extractXmlValue(flightXml, 'AircraftId') || '0')
+      };
+
+      flights.push(flight);
+    }
+
+    console.log(`[SkyAndes] Parsed ${flights.length} flights from XML`);
+    return flights;
   }
 
-  private getTagValue(parent: Element | Document, tagName: string): string {
-    const elements = parent.getElementsByTagName(tagName);
-    return elements.length > 0 ? (elements[0].textContent || '') : '';
+  /**
+   * Extrae el valor de un tag XML usando regex
+   */
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
   }
 }

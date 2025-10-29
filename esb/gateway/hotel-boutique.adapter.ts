@@ -75,16 +75,10 @@ export class HotelBoutiqueSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://hotelparis.com/integracion/buscarServicios"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://hotelparis.com/integracion/buscarServicios"');
+    console.log('[Hotel Boutique] Raw XML Response length:', rawResponse.length);
     
-    const rooms: DTO_Room[] = [];
-    const items = xml.getElementsByTagName('DTO_Room');
-    
-    for (let i = 0; i < items.length; i++) {
-      rooms.push(this.parseRoomFromElement(items[i]));
-    }
-    
-    return rooms;
+    return this.parseRoomsFromXml(rawResponse);
   }
 
   /**
@@ -98,12 +92,14 @@ export class HotelBoutiqueSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://hotelparis.com/integracion/obtenerDetalleServicio"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://hotelparis.com/integracion/obtenerDetalleServicio"');
     
-    const resultElement = xml.getElementsByTagName('obtenerDetalleServicioResult')[0];
-    if (!resultElement) throw new Error('No se encontró el detalle de la habitación');
+    const rooms = this.parseRoomsFromXml(rawResponse);
+    if (rooms.length === 0) {
+      throw new Error('No se encontró el detalle de la habitación');
+    }
     
-    return this.parseRoomFromElement(resultElement);
+    return rooms[0];
   }
 
   /**
@@ -125,10 +121,10 @@ export class HotelBoutiqueSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://hotelparis.com/integracion/verificarDisponibilidad"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://hotelparis.com/integracion/verificarDisponibilidad"');
     
-    const result = this.getTagValue(xml, 'verificarDisponibilidadResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'verificarDisponibilidadResult');
+    return result?.toLowerCase() === 'true';
   }
 
   /**
@@ -146,13 +142,13 @@ export class HotelBoutiqueSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://hotelparis.com/integracion/cotizarReserva"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://hotelparis.com/integracion/cotizarReserva"');
     
     return {
-      Subtotal: parseFloat(this.getTagValue(xml, 'Subtotal') || '0'),
-      Impuestos: parseFloat(this.getTagValue(xml, 'Impuestos') || '0'),
-      Total: parseFloat(this.getTagValue(xml, 'Total') || '0'),
-      Desglose: this.getTagValue(xml, 'Desglose') || ''
+      Subtotal: parseFloat(this.extractXmlValue(rawResponse, 'Subtotal') || '0'),
+      Impuestos: parseFloat(this.extractXmlValue(rawResponse, 'Impuestos') || '0'),
+      Total: parseFloat(this.extractXmlValue(rawResponse, 'Total') || '0'),
+      Desglose: this.extractXmlValue(rawResponse, 'Desglose') || ''
     };
   }
 
@@ -173,13 +169,13 @@ export class HotelBoutiqueSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://hotelparis.com/integracion/crearPreReserva"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://hotelparis.com/integracion/crearPreReserva"');
     
     return {
-      PreBookingId: this.getTagValue(xml, 'PreBookingId') || '',
-      RoomId: parseInt(this.getTagValue(xml, 'RoomId') || '0'),
-      UserId: parseInt(this.getTagValue(xml, 'UserId') || '0'),
-      ExpiraEn: new Date(this.getTagValue(xml, 'ExpiraEn') || '')
+      PreBookingId: this.extractXmlValue(rawResponse, 'PreBookingId') || '',
+      RoomId: parseInt(this.extractXmlValue(rawResponse, 'RoomId') || '0'),
+      UserId: parseInt(this.extractXmlValue(rawResponse, 'UserId') || '0'),
+      ExpiraEn: new Date(this.extractXmlValue(rawResponse, 'ExpiraEn') || '')
     };
   }
 
@@ -200,13 +196,13 @@ export class HotelBoutiqueSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://hotelparis.com/integracion/confirmarReserva"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://hotelparis.com/integracion/confirmarReserva"');
     
     return {
-      BookingId: this.getTagValue(xml, 'BookingId') || '',
-      Estado: this.getTagValue(xml, 'Estado') || '',
-      MetodoPago: this.getTagValue(xml, 'MetodoPago') || '',
-      FechaConfirmacion: new Date(this.getTagValue(xml, 'FechaConfirmacion') || '')
+      BookingId: this.extractXmlValue(rawResponse, 'BookingId') || '',
+      Estado: this.extractXmlValue(rawResponse, 'Estado') || '',
+      MetodoPago: this.extractXmlValue(rawResponse, 'MetodoPago') || '',
+      FechaConfirmacion: new Date(this.extractXmlValue(rawResponse, 'FechaConfirmacion') || '')
     };
   }
 
@@ -222,36 +218,54 @@ export class HotelBoutiqueSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://hotelparis.com/integracion/cancelarReservaIntegracion"');
+    const rawResponse = await this.callRaw(soapEnvelope, '"http://hotelparis.com/integracion/cancelarReservaIntegracion"');
     
-    const result = this.getTagValue(xml, 'cancelarReservaIntegracionResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'cancelarReservaIntegracionResult');
+    return result?.toLowerCase() === 'true';
   }
 
-  // ==================== Helpers de Parseo ====================
+  // ==================== Parsers con Regex ====================
 
-  private parseRoomFromElement(element: Element | Document): DTO_Room {
-    return {
-      RoomId: parseInt(this.getTagValue(element, 'RoomId') || '0'),
-      HotelId: parseInt(this.getTagValue(element, 'HotelId') || '0'),
-      RoomType: this.getTagValue(element, 'RoomType') || '',
-      NumberBeds: parseInt(this.getTagValue(element, 'NumberBeds') || '0'),
-      OccupancyAdults: parseInt(this.getTagValue(element, 'OccupancyAdults') || '0'),
-      OccupancyChildren: parseInt(this.getTagValue(element, 'OccupancyChildren') || '0'),
-      Board: this.getTagValue(element, 'Board') || '',
-      Amenities: this.getTagValue(element, 'Amenities') || '',
-      BreakfastIncluded: this.getTagValue(element, 'BreakfastIncluded')?.toLowerCase() === 'true',
-      PricePerNight: parseFloat(this.getTagValue(element, 'PricePerNight') || '0'),
-      Currency: this.getTagValue(element, 'Currency') || 'USD',
-      IsReserved: this.getTagValue(element, 'IsReserved')?.toLowerCase() === 'true',
-      CreatedAt: new Date(this.getTagValue(element, 'CreatedAt') || ''),
-      HotelName: this.getTagValue(element, 'HotelName') || '',
-      City: this.getTagValue(element, 'City') || ''
-    };
+  /**
+   * Parse list of rooms from XML using regex
+   */
+  private parseRoomsFromXml(xmlString: string): DTO_Room[] {
+    const rooms: DTO_Room[] = [];
+    const regex = /<DTO_Room>([\s\S]*?)<\/DTO_Room>/g;
+    const matches = xmlString.matchAll(regex);
+
+    for (const match of matches) {
+      const roomXml = match[1];
+      
+      rooms.push({
+        RoomId: parseInt(this.extractXmlValue(roomXml, 'RoomId') || '0'),
+        HotelId: parseInt(this.extractXmlValue(roomXml, 'HotelId') || '0'),
+        RoomType: this.extractXmlValue(roomXml, 'RoomType') || '',
+        NumberBeds: parseInt(this.extractXmlValue(roomXml, 'NumberBeds') || '0'),
+        OccupancyAdults: parseInt(this.extractXmlValue(roomXml, 'OccupancyAdults') || '0'),
+        OccupancyChildren: parseInt(this.extractXmlValue(roomXml, 'OccupancyChildren') || '0'),
+        Board: this.extractXmlValue(roomXml, 'Board') || '',
+        Amenities: this.extractXmlValue(roomXml, 'Amenities') || '',
+        BreakfastIncluded: this.extractXmlValue(roomXml, 'BreakfastIncluded')?.toLowerCase() === 'true',
+        PricePerNight: parseFloat(this.extractXmlValue(roomXml, 'PricePerNight') || '0'),
+        Currency: this.extractXmlValue(roomXml, 'Currency') || 'USD',
+        IsReserved: this.extractXmlValue(roomXml, 'IsReserved')?.toLowerCase() === 'true',
+        CreatedAt: new Date(this.extractXmlValue(roomXml, 'CreatedAt') || ''),
+        HotelName: this.extractXmlValue(roomXml, 'HotelName') || '',
+        City: this.extractXmlValue(roomXml, 'City') || ''
+      });
+    }
+
+    console.log(`[Hotel Boutique] Parsed ${rooms.length} rooms from XML`);
+    return rooms;
   }
 
-  private getTagValue(parent: Element | Document, tagName: string): string {
-    const elements = parent.getElementsByTagName(tagName);
-    return elements.length > 0 ? (elements[0].textContent || '') : '';
+  /**
+   * Extract value from XML tag using regex
+   */
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
   }
 }

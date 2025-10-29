@@ -75,19 +75,21 @@ export class SanctumCortejoSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(
+    
+    // Get raw XML response instead of Document
+    const rawResponse = await this.callRaw(
       soapEnvelope, 
       'http://sanctumcortejo.ec/Integracion/buscarServicios'
     );
+
+    console.log('[Sanctum Cortejo] 📄 Raw XML Response length:', rawResponse.length);
     
-    const servicios: ServicioDTO[] = [];
-    const items = xml.getElementsByTagName('ServicioDTO');
-    
-    for (let i = 0; i < items.length; i++) {
-      servicios.push(this.parseServicioFromElement(items[i]));
-    }
-    
-    return servicios;
+    // Count ServicioDTO elements with regex
+    const matches = rawResponse.match(/<ServicioDTO>/g);
+    const count = matches ? matches.length : 0;
+    console.log('[Sanctum Cortejo] 📊 ServicioDTO elements found:', count);
+
+    return this.parseServiciosListFromXml(rawResponse);
   }
 
   /**
@@ -286,6 +288,54 @@ export class SanctumCortejoSoapAdapter extends SoapClient {
   }
 
   // ==================== Parser Helpers ====================
+
+  /**
+   * Parsear lista de servicios desde XML crudo (raw string)
+   * Usa regex para extraer elementos ServicioDTO
+   */
+  private parseServiciosListFromXml(xmlString: string): ServicioDTO[] {
+    const servicios: ServicioDTO[] = [];
+    
+    // Extraer todos los bloques <ServicioDTO>...</ServicioDTO>
+    const servicioRegex = /<ServicioDTO>([\s\S]*?)<\/ServicioDTO>/g;
+    const matches = xmlString.matchAll(servicioRegex);
+    
+    for (const match of matches) {
+      const servicioXml = match[1]; // Contenido entre <ServicioDTO> y </ServicioDTO>
+      
+      const servicio: ServicioDTO = {
+        IdServicio: parseInt(this.extractXmlValue(servicioXml, 'IdServicio') || '0'),
+        Nombre: this.extractXmlValue(servicioXml, 'Nombre') || '',
+        Tipo: this.extractXmlValue(servicioXml, 'Tipo') || '',
+        Ciudad: this.extractXmlValue(servicioXml, 'Ciudad') || '',
+        Precio: this.extractXmlValue(servicioXml, 'Precio') || '0',
+        Clasificacion: this.extractXmlValue(servicioXml, 'Clasificacion') || '',
+        Descripcion: this.extractXmlValue(servicioXml, 'Descripcion') || '',
+        Politicas: this.extractXmlValue(servicioXml, 'Politicas') || '',
+        Reglas: this.extractXmlValue(servicioXml, 'Reglas') || '',
+        ImagenURL: this.extractXmlValue(servicioXml, 'ImagenURL') || undefined
+      };
+      
+      servicios.push(servicio);
+    }
+    
+    console.log('[Sanctum Cortejo] ✅ Parsed servicios:', servicios.length);
+    if (servicios.length > 0) {
+      console.log('[Sanctum Cortejo] 🔍 First servicio:', servicios[0]);
+    }
+    return servicios;
+  }
+
+  /**
+   * Extrae el valor de un elemento XML usando regex
+   */
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
+  }
+
+  // ==================== Parser Helpers (DOM-based - legacy) ====================
 
   private parseServicioFromElement(element: Element): ServicioDTO {
     return {

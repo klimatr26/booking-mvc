@@ -19,6 +19,7 @@ import { CompanyHotelSearchController } from "./controllers/CompanyHotelSearchCo
 import { RestaurantCompaniesController } from "./controllers/RestaurantCompaniesController";
 import { CompanyRestaurantSearchController } from "./controllers/CompanyRestaurantSearchController";
 import { AirlineCompaniesController } from "./controllers/AirlineCompaniesController";
+import { CompanyFlightSearchController } from "./controllers/CompanyFlightSearchController";
 
 // Re-export router for other modules
 export { router };
@@ -67,6 +68,16 @@ router.register("/cars/alquileraugye", () => {
   CompanyCarSearchController(view, "alquileraugye");
 });
 
+// ==================== VUELOS ====================
+router.register("/flights", () => {
+  const ctrl = new AirlineCompaniesController();
+  ctrl.mount(document.getElementById("view")!);
+});
+router.register("/flights/skyandes", () => {
+  const ctrl = new CompanyFlightSearchController("skyandes");
+  ctrl.mount(document.getElementById("view")!);
+});
+
 // ==================== HOTELES ====================
 router.register("/hotels", () => {
   const ctrl = new HotelCompaniesController();
@@ -94,6 +105,18 @@ router.register("/hotels/petfriendly", () => {
 });
 router.register("/hotels/weworkhub", () => {
   const ctrl = new CompanyHotelSearchController("weworkhub");
+  ctrl.mount(document.getElementById("view")!);
+});
+router.register("/hotels/hotelperros", () => {
+  const ctrl = new CompanyHotelSearchController("hotelperros");
+  ctrl.mount(document.getElementById("view")!);
+});
+router.register("/hotels/hoteluio", () => {
+  const ctrl = new CompanyHotelSearchController("hoteluio");
+  ctrl.mount(document.getElementById("view")!);
+});
+router.register("/hotels/hotelboutique", () => {
+  const ctrl = new CompanyHotelSearchController("hotelboutique");
   ctrl.mount(document.getElementById("view")!);
 });
 

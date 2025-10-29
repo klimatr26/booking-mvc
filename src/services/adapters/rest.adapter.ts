@@ -121,13 +121,16 @@ export async function searchElCangrejoFelizRest(fecha: string, personas: number,
  */
 export async function searchSanctumCortejoRest(fecha: string, personas: number, hora?: string): Promise<SearchResult[]> {
   try {
-    // En producción, usar ESB directamente
-    if (!isDevelopment) {
-      const { esbSearchSanctumCortejo } = await import('./esb.adapter');
-      return await esbSearchSanctumCortejo({ fecha, personas, hora });
-    }
+    console.log('[REST Adapter] 🍷 Buscando mesas Sanctum Cortejo con:', { fecha, personas, hora });
+    
+    // En desarrollo usa Express API, en producción usa Netlify Functions
+    const url = isDevelopment 
+      ? `${API_URL}/api/restaurants/sanctumcortejo/search`
+      : `${API_URL}/restaurant-search?company=sanctumcortejo`;
+    
+    console.log('[REST Adapter] URL a llamar:', url);
 
-    const response = await fetch(`${API_URL}/api/restaurants/sanctumcortejo/search`, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fecha, personas, hora })
@@ -138,20 +141,39 @@ export async function searchSanctumCortejoRest(fecha: string, personas: number, 
     }
 
     const mesas = await response.json();
+    console.log('[REST Adapter] Mesas recibidas:', mesas.length);
     
-    return mesas.map((mesa: any) => ({
-      kind: 'restaurant' as const,
-      item: {
-        id: `sanctum-${mesa.id}`,
-        name: mesa.nombre || `Mesa #${mesa.numero || mesa.id}`,
-        city: 'Quito',
-        price: mesa.precio || 0,
-        rating: 5,
-        photo: mesa.foto || '/assets/restaurant-placeholder.jpg',
-        cuisine: 'Gourmet',
-        description: mesa.descripcion || `Capacidad: ${mesa.capacidad} personas`
-      }
-    }));
+    const results = mesas.map((mesa: any) => {
+      // Extraer ubicación del nombre de la mesa
+      // Ejemplo: "Mesa Terraza (5 personas)" → tipo = "Terraza"
+      const nombreMatch = mesa.nombre?.match(/Mesa\s+(\w+)/);
+      const ubicacion = nombreMatch ? nombreMatch[1] : '';
+      
+      // Extraer capacidad del nombre de la mesa
+      // Ejemplo: "Mesa Terraza (5 personas)" → capacidad = 5
+      const capacidadMatch = mesa.nombre?.match(/\((\d+)\s+personas?\)/);
+      const capacidad = capacidadMatch ? parseInt(capacidadMatch[1]) : 2;
+      
+      return {
+        kind: 'restaurant' as const,
+        item: {
+          id: `sanctum-${mesa.id}`,
+          name: mesa.nombre || `Mesa #${mesa.numero || mesa.id}`,
+          city: mesa.ciudad || 'Quito',
+          price: mesa.precio || 0,
+          rating: parseInt(mesa.clasificacion) || 5,
+          photo: mesa.foto || '/assets/restaurant-placeholder.jpg',
+          cuisine: 'Gourmet',
+          description: mesa.descripcion || `Capacidad: ${capacidad} personas`,
+          // Campos extras para filtrado
+          tipo: ubicacion, // Ubicación extraída del nombre: Terraza, Afuera, Interior, VIP
+          capacidad: capacidad // Capacidad extraída del nombre
+        }
+      };
+    });
+    
+    console.log('[REST Adapter] Results mapeados:', results.length);
+    return results;
   } catch (error: any) {
     console.error('[REST Adapter] Error Sanctum Cortejo:', error.message);
     return [];
@@ -181,19 +203,44 @@ export async function searchSieteMaresRest(fecha: string, personas: number, hora
 
     const mesas = await response.json();
     
-    return mesas.map((mesa: any) => ({
-      kind: 'restaurant' as const,
-      item: {
-        id: `sietemares-${mesa.id}`,
-        name: mesa.nombre || `Mesa #${mesa.numero || mesa.id}`,
-        city: 'Manta',
-        price: mesa.precio || 0,
-        rating: 5,
-        photo: mesa.foto || '/assets/restaurant-placeholder.jpg',
-        cuisine: 'Mariscos',
-        description: mesa.descripcion || `Capacidad: ${mesa.capacidad} personas`
+    return mesas.map((mesa: any) => {
+      // Extract location and capacity from name/tipo
+      let tipo = mesa.tipo || '';
+      let capacidad = mesa.capacidad || 2;
+      
+      // Try to extract capacity from name (e.g., "Mesa VIP 6 personas")
+      const capacidadMatch = mesa.nombre?.match(/(\d+)\s*persona/i);
+      if (capacidadMatch) {
+        capacidad = parseInt(capacidadMatch[1]);
       }
-    }));
+      
+      // Extract location from tipo or nombre
+      if (!tipo && mesa.nombre) {
+        if (mesa.nombre.match(/terraza|exterior|afuera/i)) {
+          tipo = 'Terraza';
+        } else if (mesa.nombre.match(/vip|privada/i)) {
+          tipo = 'VIP';
+        } else if (mesa.nombre.match(/interior|dentro/i)) {
+          tipo = 'Interior';
+        }
+      }
+      
+      return {
+        kind: 'restaurant' as const,
+        item: {
+          id: `sietemares-${mesa.id}`,
+          name: mesa.nombre || `Mesa #${mesa.numero || mesa.id}`,
+          city: 'Manta',
+          price: mesa.precio || 0,
+          rating: 5,
+          photo: mesa.foto || '/assets/restaurant-placeholder.jpg',
+          cuisine: 'Mariscos',
+          description: mesa.descripcion || `Capacidad: ${capacidad} personas`,
+          tipo,
+          capacidad
+        }
+      };
+    });
   } catch (error: any) {
     console.error('[REST Adapter] Error Siete Mares:', error.message);
     return [];
@@ -271,34 +318,191 @@ export async function searchWeWorkHubRest(fechaEntrada: string, fechaSalida: str
 }
 
 /**
- * Buscar vehículos en Easy Car
+ * Buscar servicios en Hotel Perros (Pet Hotel)
  */
-export async function searchEasyCarRest(fechaInicio: string, fechaFin: string, ciudad?: string): Promise<SearchResult[]> {
+export async function searchHotelPerrosRest(
+  inicio: string,
+  fin: string,
+  unidades: number,
+  tamano?: string,
+  ciudad?: string
+): Promise<SearchResult[]> {
   try {
-    const response = await fetch(`${API_URL}/api/cars/easycar/search`, {
+    const response = await fetch(`${API_URL}/api/hotels/hotelperros/search`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fechaInicio, fechaFin, ciudad })
+      body: JSON.stringify({ inicio, fin, unidades, tamano, ciudad })
     });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const vehiculos = await response.json();
+    const servicios = await response.json();
     
-    return vehiculos.map((vehiculo: any) => ({
-      id: `easycar-${vehiculo.id}`,
-      title: `${vehiculo.marca} ${vehiculo.modelo}`,
-      kind: 'car' as const,
-      company: 'easycar',
-      price: vehiculo.precio || 0,
-      currency: 'USD',
-      rating: 4.3,
-      description: `${vehiculo.tipo} - ${vehiculo.capacidad} pasajeros`,
-      thumbnail: '/assets/car-placeholder.jpg',
-      metadata: vehiculo
+    return servicios.map((servicio: any) => ({
+      kind: 'hotel' as const,
+      item: {
+        id: `hotelperros-${servicio.id}`,
+        name: servicio.nombre || 'Servicio de Hospedaje Canino',
+        city: ciudad || 'N/A',
+        price: servicio.precio || 0,
+        rating: 5,
+        photo: '/assets/dog-hotel-placeholder.jpg',
+        available: servicio.disponible !== false
+      }
     }));
+  } catch (error: any) {
+    console.error('[REST Adapter] Error Hotel Perros:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Buscar hoteles en Hotel UIO
+ */
+export async function searchHotelUIOrest(
+  ciudad?: string,
+  precioMax?: number,
+  fecha?: string
+): Promise<SearchResult[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/hotels/hoteluio/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ciudad, precioMax, fecha })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const hoteles = await response.json();
+    
+    return hoteles.map((hotel: any) => ({
+      kind: 'hotel' as const,
+      item: {
+        id: hotel.id,
+        name: hotel.nombre,
+        city: hotel.metadata?.ciudad || ciudad || 'Ecuador',
+        price: hotel.precio || 0,
+        rating: hotel.metadata?.estrellas || 3,
+        photo: hotel.imagen || '/assets/hotel-placeholder.jpg',
+        available: hotel.disponible !== false,
+        description: hotel.descripcion
+      }
+    }));
+  } catch (error: any) {
+    console.error('[REST Adapter] Error Hotel UIO:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Buscar habitaciones en Hotel Boutique Paris
+ */
+export async function searchHotelBoutiqueRest(
+  ciudad?: string,
+  precioMin?: number,
+  precioMax?: number,
+  amenities?: string,
+  fechaInicio?: string,
+  fechaFin?: string
+): Promise<SearchResult[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/hotels/hotelboutique/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ciudad, precioMin, precioMax, amenities, fechaInicio, fechaFin })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const hoteles = await response.json();
+    
+    return hoteles.map((hotel: any) => ({
+      kind: 'hotel' as const,
+      item: {
+        id: hotel.id,
+        name: hotel.nombre,
+        city: hotel.metadata?.ciudad || ciudad || 'Paris',
+        price: hotel.precio || 0,
+        rating: 5, // Hotel boutique de lujo
+        photo: hotel.imagen || '/assets/hotel-placeholder.jpg',
+        available: hotel.disponible !== false,
+        description: hotel.descripcion
+      }
+    }));
+  } catch (error: any) {
+    console.error('[REST Adapter] Error Hotel Boutique:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Buscar vehículos en Easy Car
+ */
+export async function searchEasyCarRest(
+  categoria?: string,
+  transmision?: string, 
+  fechaInicio?: string, 
+  fechaFin?: string,
+  edadConductor?: number
+): Promise<SearchResult[]> {
+  try {
+    console.log('[REST Adapter] 🚗 Buscando vehículos Easy Car con:', { categoria, transmision, fechaInicio, fechaFin, edadConductor });
+    
+    // En desarrollo usa Express API, en producción usa Netlify Functions
+    const url = isDevelopment 
+      ? `${API_URL}/api/cars/easycar/search`
+      : `${API_URL}/car-search?company=easycar`;
+    
+    console.log('[REST Adapter] URL a llamar:', url);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoria, transmision, fechaInicio, fechaFin, edadConductor })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const cars = await response.json();
+    console.log('[REST Adapter] Vehículos recibidos:', cars.length);
+    if (cars.length > 0) {
+      console.log('[REST Adapter] 🔍 Primer vehículo del API:', cars[0]);
+    }
+    
+    const results = cars.map((car: any) => {
+      console.log('[REST Adapter] 💰 Precio del vehículo:', car.marca, car.modelo, '- Precio:', car.precio, 'Tipo:', typeof car.precio);
+      
+      return {
+        kind: 'car' as const,
+        item: {
+          id: `easycar-${car.id}`,
+          brand: car.marca || '',
+          model: car.modelo || '',
+          year: car.anio || 2020,
+          category: car.categoria || '',
+          transmission: car.transmision || '',
+          fuel: car.combustible || '',
+          pricePerDay: car.precio || 0,  // ✅ Cambiado de price a pricePerDay
+          photo: '/assets/car-placeholder.jpg',
+          capacity: 5, // Easy Car no proporciona capacidad
+          agency: car.agencia || 0
+        }
+      };
+    });
+    
+    console.log('[REST Adapter] Results mapeados:', results.length);
+    if (results.length > 0) {
+      console.log('[REST Adapter] 🔍 Primer resultado mapeado:', results[0]);
+    }
+    return results;
   } catch (error: any) {
     console.error('[REST Adapter] Error Easy Car:', error.message);
     return [];
@@ -306,33 +510,103 @@ export async function searchEasyCarRest(fechaInicio: string, fechaFin: string, c
 }
 
 /**
- * Buscar vehículos en Cuenca Car
+ * Buscar vehículos en Alquiler Augye
  */
-export async function searchCuencaCarRest(fechaInicio: string, fechaFin: string, ciudad?: string): Promise<SearchResult[]> {
+export async function searchAlquilerAugyeRest(
+  categoria?: string,
+  gearbox?: string,
+  ciudad?: string,
+  page?: number,
+  pageSize?: number
+): Promise<SearchResult[]> {
   try {
-    const response = await fetch(`${API_URL}/api/cars/cuencacar/search`, {
+    console.log('[REST Adapter] 🚗 Buscando vehículos Alquiler Augye con:', { categoria, gearbox, ciudad, page, pageSize });
+    
+    // En desarrollo usa Express API, en producción usa Netlify Functions
+    const url = isDevelopment 
+      ? `${API_URL}/api/cars/alquileraugye/search`
+      : `${API_URL}/car-search?company=alquileraugye`;
+    
+    console.log('[REST Adapter] URL a llamar:', url);
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fechaInicio, fechaFin, ciudad })
+      body: JSON.stringify({ categoria, gearbox, ciudad, page: page || 1, pageSize: pageSize || 50 })
     });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const vehiculos = await response.json();
+    const cars = await response.json();
+    console.log('[REST Adapter] Vehículos recibidos:', cars.length);
+    if (cars.length > 0) {
+      console.log('[REST Adapter] 🔍 Primer vehículo del API:', cars[0]);
+    }
     
-    return vehiculos.map((vehiculo: any) => ({
-      id: `cuencacar-${vehiculo.id}`,
-      title: `${vehiculo.marca} ${vehiculo.modelo}`,
+    const results = cars.map((car: any) => {
+      console.log('[REST Adapter] 💰 Precio del vehículo:', car.marca, car.modelo, '- Precio:', car.precio, 'Tipo:', typeof car.precio);
+      
+      return {
+        kind: 'car' as const,
+        item: {
+          id: `alquileraugye-${car.id}`,
+          brand: car.marca || '',
+          model: car.modelo || '',
+          year: 2020,
+          category: car.categoria || '',
+          transmission: car.transmision || '',
+          fuel: 'Gasolina',
+          pricePerDay: car.precio || 0,
+          photo: car.foto || '/assets/car-placeholder.jpg',
+          capacity: 5,
+          agency: 0
+        }
+      };
+    });
+    
+    console.log('[REST Adapter] Results mapeados:', results.length);
+    if (results.length > 0) {
+      console.log('[REST Adapter] 🔍 Primer resultado mapeado:', results[0]);
+    }
+    return results;
+  } catch (error: any) {
+    console.error('[REST Adapter] Error Alquiler Augye:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Buscar vehículos en Cuenca Car
+ */
+export async function searchCuencaCarRest(ciudad?: string, categoria?: string): Promise<SearchResult[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/cars/cuencacar/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ciudad, categoria })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const cars = await response.json();
+    
+    return cars.map((car: any) => ({
       kind: 'car' as const,
-      company: 'cuencacar',
-      price: vehiculo.precio || 0,
-      currency: 'USD',
-      rating: 4.4,
-      description: `${vehiculo.tipo} - ${vehiculo.capacidad} pasajeros`,
-      thumbnail: '/assets/car-placeholder.jpg',
-      metadata: vehiculo
+      item: {
+        id: `cuencacar-${car.id}`,
+        brand: car.marca,
+        model: car.modelo,
+        category: car.categoria,
+        transmission: car.transmision,
+        pricePerDay: car.pricePerDay || 0,
+        city: car.ciudad || 'Cuenca',
+        photo: '/assets/car-placeholder.jpg',
+        available: car.disponible !== false
+      }
     }));
   } catch (error: any) {
     console.error('[REST Adapter] Error Cuenca Car:', error.message);
@@ -406,6 +680,75 @@ export async function searchBackendCuencaRest(fechaInicio: string, fechaFin: str
     }));
   } catch (error: any) {
     console.error('[REST Adapter] Error Backend Cuenca:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Buscar vehículos en Renta Autos Madrid
+ */
+export async function searchRentaAutosMadridRest(
+  ciudad?: string,
+  categoria?: string,
+  gearbox?: string,
+  precioMin?: number,
+  precioMax?: number
+): Promise<SearchResult[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/cars/rentaautosmadrid/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ciudad, categoria, gearbox, precioMin, precioMax })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const vehiculos = await response.json();
+    
+    return vehiculos.map((vehiculo: any) => ({
+      kind: 'car' as const,
+      item: {
+        id: vehiculo.id,
+        brand: vehiculo.metadata?.categoria || 'Renta Autos Madrid',
+        model: vehiculo.nombre,
+        pricePerDay: vehiculo.precio || 0,
+        photo: vehiculo.imagen || '/assets/car-placeholder.jpg'
+      }
+    }));
+  } catch (error: any) {
+    console.error('[REST Adapter] Error Renta Autos Madrid:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Buscar vuelos en SkyAndes
+ */
+export async function searchSkyAndesRest(
+  originId: number,
+  destinationId: number,
+  fecha: string,
+  cabinClass: string
+): Promise<SearchResult[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/flights/skyandes/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ originId, destinationId, fecha, cabinClass })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const vuelos = await response.json();
+    console.log(`[REST Adapter] SkyAndes: ${vuelos.length} vuelos encontrados`);
+    
+    return vuelos; // Ya vienen en formato SearchResult desde el backend
+  } catch (error: any) {
+    console.error('[REST Adapter] Error SkyAndes:', error.message);
     return [];
   }
 }

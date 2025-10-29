@@ -8,7 +8,8 @@ import type { SearchResult } from "../models/types";
 const COMPANY_NAMES: Record<string, string> = {
   hotelcr: "Hotel CR",
   cuencahotels: "Cuenca Hotels",
-  madrid25: "Madrid Hotels 25"
+  madrid25: "Madrid Hotels 25",
+  hotelperros: "🐕 Hotel Perros (Pet Hotel)"
 };
 
 export function CompanyHotelSearchView(companyId: string) {

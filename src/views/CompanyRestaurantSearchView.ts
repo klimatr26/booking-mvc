@@ -126,7 +126,7 @@ export function CompanyRestaurantSearchView(companyId: string) {
                 isSaborAndino ? 'Guayaquil - 30 mesas disponibles' : 
                 isElCangrejoFeliz ? 'Guayaquil - 5 mesas disponibles (Especialidad en mariscos 🦀)' :
                 isSanctumCortejo ? 'Madrid - 25 mesas disponibles (Alta cocina europea 🍷)' :
-                isSieteMares ? 'Cuenca - 4 mesas disponibles (Especialidad del mar 🌊)' :
+                isSieteMares ? 'Guayaquil - 4 tipos de mesas: Interior, Exterior, VIP Interior y VIP Exterior 🐟' :
                 'Busca mesas disponibles'
               }</p>
             </div>

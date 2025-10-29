@@ -36,18 +36,18 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     }
 
     const body = JSON.parse(event.body || '{}');
-    const { pickupDate, returnDate, location } = body;
+    const { categoria, transmision, fechaInicio, fechaFin, edadConductor } = body;
 
     console.log(`[Netlify Function] Buscando carros en ${company}...`);
 
-    let servicios: any[] = [];
+    let vehiculos: any[] = [];
     
     switch (company) {
       case 'easycar': {
-        const { EasyCarAdapter } = await import('../../esb/gateway/easy-car.adapter');
+        const { EasyCarSoapAdapter } = await import('../../esb/gateway/easy-car.adapter');
         const { defaultConfig } = await import('../../esb/utils/config');
-        const adapter = new EasyCarAdapter(defaultConfig.endpoints.easyCar);
-        servicios = await adapter.buscarServicios('');
+        const adapter = new EasyCarSoapAdapter(defaultConfig.endpoints.easyCar);
+        vehiculos = await adapter.buscarServicios(categoria, transmision, fechaInicio, fechaFin, edadConductor);
         break;
       }
       
@@ -83,21 +83,26 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         };
     }
 
-    console.log(`[Netlify Function] ${servicios.length} carros encontrados`);
+    console.log(`[Netlify Function] ${vehiculos.length} vehículos encontrados`);
 
-    const carros = servicios.map(servicio => ({
-      id: servicio.IdServicio,
-      marca: servicio.Nombre,
-      modelo: servicio.Tipo || 'Sedan',
-      precio: parseFloat(servicio.Precio) || 0,
-      descripcion: servicio.Descripcion,
-      foto: servicio.ImagenURL
+    // Transformar vehículos a formato estándar
+    const cars = vehiculos.map((v: any) => ({
+      id: v.IdVehiculo,
+      marca: v.Marca,
+      modelo: v.Modelo,
+      anio: v.Anio,
+      categoria: v.Categoria,
+      transmision: v.Transmision,
+      combustible: v.Combustible,
+      precio: v.PrecioBaseDia,
+      disponible: v.Activo,
+      agencia: v.IdAgencia
     }));
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(carros)
+      body: JSON.stringify(cars)
     };
 
   } catch (error: any) {

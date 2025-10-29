@@ -72,8 +72,10 @@ export class HotelUIOSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://mio.hotel/booking/buscarServicios');
-    return this.parseHoteles(response);
+    const rawResponse = await this.callRaw(envelope, 'http://mio.hotel/booking/buscarServicios');
+    
+    console.log('[Hotel UIO] Raw XML Response length:', rawResponse.length);
+    return this.parseHotelesFromXml(rawResponse);
   }
 
   /**
@@ -87,8 +89,11 @@ export class HotelUIOSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://mio.hotel/booking/obtenerDetalleServicio');
-    return this.parseHotel(response);
+    const rawResponse = await this.callRaw(envelope, 'http://mio.hotel/booking/obtenerDetalleServicio');
+    
+    const hoteles = this.parseHotelesFromXml(rawResponse);
+    if (hoteles.length === 0) throw new Error('Hotel no encontrado');
+    return hoteles[0];
   }
 
   /**
@@ -108,10 +113,10 @@ export class HotelUIOSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://mio.hotel/booking/verificarDisponibilidad');
+    const rawResponse = await this.callRaw(envelope, 'http://mio.hotel/booking/verificarDisponibilidad');
     
-    const result = this.getNodeText(response, 'verificarDisponibilidadResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'verificarDisponibilidadResult');
+    return result?.toLowerCase() === 'true';
   }
 
   /**
@@ -131,10 +136,10 @@ export class HotelUIOSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://mio.hotel/booking/cotizarReserva');
+    const rawResponse = await this.callRaw(envelope, 'http://mio.hotel/booking/cotizarReserva');
     
-    const result = this.getNodeText(response, 'cotizarReservaResult');
-    return parseFloat(result) || 0;
+    const result = this.extractXmlValue(rawResponse, 'cotizarReservaResult');
+    return parseFloat(result || '0');
   }
 
   /**
@@ -156,10 +161,10 @@ export class HotelUIOSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://mio.hotel/booking/crearPreReserva');
+    const rawResponse = await this.callRaw(envelope, 'http://mio.hotel/booking/crearPreReserva');
     
-    const result = this.getNodeText(response, 'crearPreReservaResult');
-    return parseInt(result) || 0;
+    const result = this.extractXmlValue(rawResponse, 'crearPreReservaResult');
+    return parseInt(result || '0') || 0;
   }
 
   /**
@@ -177,10 +182,10 @@ export class HotelUIOSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://mio.hotel/booking/confirmarReserva');
+    const rawResponse = await this.callRaw(envelope, 'http://mio.hotel/booking/confirmarReserva');
     
-    const result = this.getNodeText(response, 'confirmarReservaResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'confirmarReservaResult');
+    return result?.toLowerCase() === 'true';
   }
 
   /**
@@ -194,8 +199,8 @@ export class HotelUIOSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://mio.hotel/booking/obtenerFactura');
-    return this.parseFactura(response);
+    const rawResponse = await this.callRaw(envelope, 'http://mio.hotel/booking/obtenerFactura');
+    return this.parseFacturaFromXml(rawResponse);
   }
 
   /**
@@ -213,67 +218,65 @@ export class HotelUIOSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://mio.hotel/booking/cancelarReservaIntegracion');
+    const rawResponse = await this.callRaw(envelope, 'http://mio.hotel/booking/cancelarReservaIntegracion');
     
-    const result = this.getNodeText(response, 'cancelarReservaIntegracionResult');
-    return result.toLowerCase() === 'true';
+    const result = this.extractXmlValue(rawResponse, 'cancelarReservaIntegracionResult');
+    return result?.toLowerCase() === 'true';
   }
 
-  // ==================== Parsers ====================
+  // ==================== Parsers con Regex ====================
 
-  private parseHoteles(doc: Document): HotelDTO[] {
+  /**
+   * Parse list of hotels from XML using regex
+   */
+  private parseHotelesFromXml(xmlString: string): HotelDTO[] {
     const hoteles: HotelDTO[] = [];
-    const nodes = doc.getElementsByTagName('Hotel');
+    const regex = /<Hotel>([\s\S]*?)<\/Hotel>/g;
+    const matches = xmlString.matchAll(regex);
 
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      hoteles.push({
-        IdHotel: parseInt(this.getChildText(node, 'IdHotel')) || 0,
-        Nombre: this.getChildText(node, 'Nombre'),
-        Ciudad: this.getChildText(node, 'Ciudad'),
-        Direccion: this.getChildText(node, 'Direccion'),
-        Estrellas: parseInt(this.getChildText(node, 'Estrellas')) || 0,
-        Telefono: this.getChildText(node, 'Telefono'),
-        Correo: this.getChildText(node, 'Correo'),
-        Descripcion: this.getChildText(node, 'Descripcion'),
-        Imagen: this.getChildText(node, 'Imagen')
-      });
+    for (const match of matches) {
+      const hotelXml = match[1];
+      
+      const hotel: HotelDTO = {
+        IdHotel: parseInt(this.extractXmlValue(hotelXml, 'IdHotel') || '0'),
+        Nombre: this.extractXmlValue(hotelXml, 'Nombre') || '',
+        Ciudad: this.extractXmlValue(hotelXml, 'Ciudad') || '',
+        Direccion: this.extractXmlValue(hotelXml, 'Direccion') || '',
+        Estrellas: parseInt(this.extractXmlValue(hotelXml, 'Estrellas') || '0'),
+        Telefono: this.extractXmlValue(hotelXml, 'Telefono') || '',
+        Correo: this.extractXmlValue(hotelXml, 'Correo') || '',
+        Descripcion: this.extractXmlValue(hotelXml, 'Descripcion') || '',
+        Imagen: this.extractXmlValue(hotelXml, 'Imagen') || ''
+      };
+
+      hoteles.push(hotel);
     }
 
+    console.log(`[Hotel UIO] Parsed ${hoteles.length} hotels from XML`);
     return hoteles;
   }
 
-  private parseHotel(doc: Document): HotelDTO {
+  /**
+   * Parse single invoice/factura from XML
+   */
+  private parseFacturaFromXml(xmlString: string): FacturaDTO {
     return {
-      IdHotel: parseInt(this.getNodeText(doc, 'IdHotel')) || 0,
-      Nombre: this.getNodeText(doc, 'Nombre'),
-      Ciudad: this.getNodeText(doc, 'Ciudad'),
-      Direccion: this.getNodeText(doc, 'Direccion'),
-      Estrellas: parseInt(this.getNodeText(doc, 'Estrellas')) || 0,
-      Telefono: this.getNodeText(doc, 'Telefono'),
-      Correo: this.getNodeText(doc, 'Correo'),
-      Descripcion: this.getNodeText(doc, 'Descripcion'),
-      Imagen: this.getNodeText(doc, 'Imagen')
-    };
-  }
-
-  private parseFactura(doc: Document): FacturaDTO {
-    return {
-      IdFactura: parseInt(this.getNodeText(doc, 'IdFactura')) || 0,
-      NumeroFactura: this.getNodeText(doc, 'NumeroFactura'),
-      FechaEmision: this.getNodeText(doc, 'FechaEmision'),
-      Subtotal: parseFloat(this.getNodeText(doc, 'Subtotal')) || 0,
-      Impuestos: parseFloat(this.getNodeText(doc, 'Impuestos')) || 0,
-      Total: parseFloat(this.getNodeText(doc, 'Total')) || 0,
-      XmlSRI: this.getNodeText(doc, 'XmlSRI')
+      IdFactura: parseInt(this.extractXmlValue(xmlString, 'IdFactura') || '0'),
+      NumeroFactura: this.extractXmlValue(xmlString, 'NumeroFactura') || '',
+      FechaEmision: this.extractXmlValue(xmlString, 'FechaEmision') || '',
+      Subtotal: parseFloat(this.extractXmlValue(xmlString, 'Subtotal') || '0'),
+      Impuestos: parseFloat(this.extractXmlValue(xmlString, 'Impuestos') || '0'),
+      Total: parseFloat(this.extractXmlValue(xmlString, 'Total') || '0'),
+      XmlSRI: this.extractXmlValue(xmlString, 'XmlSRI') || ''
     };
   }
 
   /**
-   * Helper: Get text content from child node
+   * Extract XML value using regex
    */
-  private getChildText(parent: Element, tagName: string): string {
-    const child = parent.getElementsByTagName(tagName)[0];
-    return child?.textContent || '';
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
   }
 }

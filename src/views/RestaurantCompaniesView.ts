@@ -6,7 +6,7 @@ const RESTAURANT_COMPANIES = [
   { id: "saborandino", name: "Sabor Andino", status: "100%", functional: true, count: 30, description: "Restaurante con 30 mesas disponibles - Guayaquil. Ubicaciones: Terraza, Interior, Afuera, VIP" },
   { id: "elcangrejofeliz", name: "El Cangrejo Feliz", status: "100%", functional: true, count: 5, description: "Restaurante con 5 mesas - Guayaquil. Especialidad en mariscos. Ubicaciones: Interior y Exterior" },
   { id: "sanctumcortejo", name: "Sanctum Cortejo", status: "100%", functional: true, count: 25, description: "Restaurante elegante con 25 mesas - Madrid. Alta cocina europea. Ubicaciones: Interior y Exterior" },
-  { id: "sietemares", name: "7 Mares", status: "100%", functional: true, count: 4, description: "Restaurante especializado en mariscos - Cuenca. 4 mesas disponibles. Especialidad del mar 🌊" },
+  { id: "sietemares", name: "7 Mares Restaurant", status: "100%", functional: true, count: 4, description: "🐟 Restaurante especializado en mariscos - Guayaquil. 4 tipos de mesas: Interior, Exterior, VIP Interior y VIP Exterior" },
   { id: "restaurantgh", name: "Restaurant GH", status: "100%", functional: true, count: 12, description: "Restaurantes gourmet y alta cocina" },
   { id: "madrfood", name: "MadrFood", status: "75%", functional: false, count: 20, description: "Comida española tradicional" },
   { id: "foodkm25", name: "Food KM25", status: "62.5%", functional: false, count: 25, description: "Restaurantes en zona metropolitana" },

@@ -60,6 +60,30 @@ const HOTEL_COMPANIES: HotelCompany[] = [
     status: "85%",
     functional: true,
     hotelCount: 8 // Habitaciones disponibles
+  },
+  {
+    id: "hotelperros",
+    name: "🐕 Hotel Perros (Pet Hotel)",
+    description: "Hospedaje canino especializado. Servicios por tamaño: PEQUEÑO, MEDIANO, GRANDE. ¡Cuida a tu mejor amigo!",
+    status: "100%",
+    functional: true,
+    hotelCount: 3 // Tipos de servicio por tamaño
+  },
+  {
+    id: "hoteluio",
+    name: "🏔️ Hotel UIO",
+    description: "Hoteles en Ecuador con generación de facturas electrónicas (SRI). Quito, Guayaquil y más ciudades.",
+    status: "100%",
+    functional: true,
+    hotelCount: 3
+  },
+  {
+    id: "hotelboutique",
+    name: "🗼 Hotel Boutique Paris",
+    description: "Hotel boutique de lujo en París. Habitaciones con amenities premium y desayuno incluido.",
+    status: "100%",
+    functional: true,
+    hotelCount: 5
   }
 ];
 

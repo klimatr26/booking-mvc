@@ -113,26 +113,51 @@ export class CuencaCarRentalSoapAdapter extends SoapClient {
     `;
     const envelope = buildSoapEnvelope(body);
     
-    const xml = await this.call(envelope, `"${this.namespace}/buscarServicios"`);
-    const items = xml.getElementsByTagName('DTO_ServicioIntegracion');
+    const rawResponse = await this.callRaw(envelope, `"${this.namespace}/buscarServicios"`);
+    console.log('[Cuenca Car] Raw XML Response length:', rawResponse.length);
     
-    const result: DTO_ServicioIntegracion[] = [];
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      result.push({
-        IdVehiculo: parseInt(this.getTagValue(item, 'IdVehiculo')),
-        AgencyId: parseInt(this.getTagValue(item, 'AgencyId')),
-        Ciudad: this.getTagValue(item, 'Ciudad'),
-        Categoria: this.getTagValue(item, 'Categoria'),
-        Transmision: this.getTagValue(item, 'Transmision'),
-        Marca: this.getTagValue(item, 'Marca'),
-        Modelo: this.getTagValue(item, 'Modelo'),
-        PrecioDia: parseFloat(this.getTagValue(item, 'PrecioDia')),
-        Disponible: this.getTagValue(item, 'Disponible') === 'true'
-      });
+    // Count elements for debugging
+    const matches = rawResponse.match(/<DTO_ServicioIntegracion>/g);
+    console.log('[Cuenca Car] DTO_ServicioIntegracion elements found:', matches ? matches.length : 0);
+    
+    return this.parseServiciosListFromXml(rawResponse);
+  }
+
+  // Regex-based XML parsing
+  private parseServiciosListFromXml(xmlString: string): DTO_ServicioIntegracion[] {
+    const servicios: DTO_ServicioIntegracion[] = [];
+    
+    // Extract all DTO_ServicioIntegracion elements using regex
+    const regex = /<DTO_ServicioIntegracion>([\s\S]*?)<\/DTO_ServicioIntegracion>/g;
+    const matches = xmlString.matchAll(regex);
+    
+    for (const match of matches) {
+      const servicioXml = match[1];
+      
+      const servicio: DTO_ServicioIntegracion = {
+        IdVehiculo: parseInt(this.extractXmlValue(servicioXml, 'IdVehiculo') || '0') || 0,
+        AgencyId: parseInt(this.extractXmlValue(servicioXml, 'AgencyId') || '0') || 0,
+        Ciudad: this.extractXmlValue(servicioXml, 'Ciudad') || '',
+        Categoria: this.extractXmlValue(servicioXml, 'Categoria') || '',
+        Transmision: this.extractXmlValue(servicioXml, 'Transmision') || '',
+        Marca: this.extractXmlValue(servicioXml, 'Marca') || '',
+        Modelo: this.extractXmlValue(servicioXml, 'Modelo') || '',
+        PrecioDia: parseFloat(this.extractXmlValue(servicioXml, 'PrecioDia') || '0') || 0,
+        Disponible: this.extractXmlValue(servicioXml, 'Disponible') === 'true'
+      };
+      
+      servicios.push(servicio);
     }
     
-    return result;
+    console.log('[Cuenca Car] Parsed vehicles:', servicios.length);
+    return servicios;
+  }
+
+  // Helper method to extract XML tag values using regex
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
   }
 
   /**

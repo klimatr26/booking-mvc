@@ -72,6 +72,8 @@ export class KM25MadridHotelSoapAdapter extends SoapClient {
    * Busca hoteles por nombre/ciudad, precio o fecha
    */
   async buscarServicios(filtros?: FiltrosHotel): Promise<Hotel[]> {
+    console.log('[KM25 Madrid] 🔍 Parámetros recibidos:', filtros);
+    
     const f = filtros || {};
     
     // Manejar campos opcionales - omitir si no están presentes
@@ -87,16 +89,21 @@ export class KM25MadridHotelSoapAdapter extends SoapClient {
     `;
 
     const soapEnvelope = buildSoapEnvelope(body);
-    const xml = await this.call(soapEnvelope, '"http://mio.hotel/booking/buscarServicios"');
     
-    const hoteles: Hotel[] = [];
-    const items = xml.getElementsByTagName('Hotel');
-    
-    for (let i = 0; i < items.length; i++) {
-      hoteles.push(this.parseHotelFromElement(items[i]));
+    try {
+      // Usar callRaw() para obtener XML como string
+      const rawResponse = await this.callRaw(soapEnvelope, '"http://mio.hotel/booking/buscarServicios"');
+      console.log('[KM25 Madrid] 📄 Raw XML Response length:', rawResponse.length);
+      
+      // Contar elementos usando regex
+      const matches = rawResponse.match(/<Hotel>/g);
+      console.log('[KM25 Madrid] 🏨 Hotel elements found:', matches ? matches.length : 0);
+      
+      return this.parseHotelesListFromXml(rawResponse);
+    } catch (error: any) {
+      console.error('[KM25 Madrid] ❌ Error en buscarServicios:', error.message);
+      throw error;
     }
-    
-    return hoteles;
   }
 
   /**
@@ -247,6 +254,57 @@ export class KM25MadridHotelSoapAdapter extends SoapClient {
 
   // ========================================
   // Helpers de Parseo
+  // ========================================
+  // Parser Helpers (Regex-based)
+  // ========================================
+
+  /**
+   * Parsear lista de hoteles desde XML crudo (raw string)
+   * Usa regex para extraer elementos Hotel
+   */
+  private parseHotelesListFromXml(xmlString: string): Hotel[] {
+    const hoteles: Hotel[] = [];
+    
+    // Extraer todos los bloques <Hotel>...</Hotel>
+    const hotelRegex = /<Hotel>([\s\S]*?)<\/Hotel>/g;
+    const matches = xmlString.matchAll(hotelRegex);
+    
+    for (const match of matches) {
+      const hotelXml = match[1]; // Contenido entre <Hotel> y </Hotel>
+      
+      const hotel: Hotel = {
+        idHotel: parseInt(this.extractXmlValue(hotelXml, 'IdHotel') || '0'),
+        nombre: this.extractXmlValue(hotelXml, 'Nombre') || '',
+        ciudad: this.extractXmlValue(hotelXml, 'Ciudad') || '',
+        direccion: this.extractXmlValue(hotelXml, 'Direccion') || '',
+        estrellas: parseInt(this.extractXmlValue(hotelXml, 'Estrellas') || '0'),
+        telefono: this.extractXmlValue(hotelXml, 'Telefono') || '',
+        correo: this.extractXmlValue(hotelXml, 'Correo') || '',
+        descripcion: this.extractXmlValue(hotelXml, 'Descripcion') || '',
+        imagen: this.extractXmlValue(hotelXml, 'Imagen') || ''
+      };
+      
+      hoteles.push(hotel);
+    }
+    
+    console.log('[KM25 Madrid] ✅ Parsed hoteles:', hoteles.length);
+    if (hoteles.length > 0) {
+      console.log('[KM25 Madrid] 🔍 First hotel:', hoteles[0]);
+    }
+    return hoteles;
+  }
+
+  /**
+   * Extrae el valor de un elemento XML usando regex
+   */
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
+  }
+
+  // ========================================
+  // Parser Helpers (DOM-based - legacy)
   // ========================================
 
   private parseHotelFromElement(el: Element): Hotel {

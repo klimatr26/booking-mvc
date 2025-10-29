@@ -88,8 +88,15 @@ export class SieteMaresSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://sushibar1.com/buscarServicios');
-    return this.parseTipoServicioList(response);
+    const rawResponse = await this.callRaw(envelope, 'http://sushibar1.com/buscarServicios');
+    console.log('[7 Mares] Raw XML Response length:', rawResponse.length);
+    console.log('[7 Mares] Raw XML (first 1500 chars):', rawResponse.substring(0, 1500));
+    
+    // Count elements for debugging (el XML usa <TipoServicio> no <TipoServicioDTO>)
+    const matches = rawResponse.match(/<TipoServicio>/g);
+    console.log('[7 Mares] TipoServicio elements found:', matches ? matches.length : 0);
+    
+    return this.parseTipoServicioListFromXml(rawResponse);
   }
 
   async obtenerDetalleServicio(idServicio: number): Promise<DetalleServicioDTO> {
@@ -194,6 +201,38 @@ export class SieteMaresSoapAdapter extends SoapClient {
   }
 
   // ==================== Parsers ====================
+
+  // Regex-based XML parsing (replaces DOM-based parsing)
+  private parseTipoServicioListFromXml(xmlString: string): TipoServicioDTO[] {
+    const servicios: TipoServicioDTO[] = [];
+    
+    // Extract all TipoServicio elements using regex (sin "DTO" en el XML real)
+    const regex = /<TipoServicio>([\s\S]*?)<\/TipoServicio>/g;
+    const matches = xmlString.matchAll(regex);
+    
+    for (const match of matches) {
+      const servicioXml = match[1];
+      
+      const servicio: TipoServicioDTO = {
+        IdTipo: parseInt(this.extractXmlValue(servicioXml, 'IdTipo') || '0') || 0,
+        Nombre: this.extractXmlValue(servicioXml, 'Nombre') || '',
+        Subtipo: this.extractXmlValue(servicioXml, 'Subtipo') || '',
+        Descripcion: this.extractXmlValue(servicioXml, 'Descripcion') || ''
+      };
+      
+      servicios.push(servicio);
+    }
+    
+    console.log('[7 Mares] Parsed services:', servicios.length);
+    return servicios;
+  }
+
+  // Helper method to extract XML tag values using regex
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
+  }
 
   private parseTipoServicioList(doc: Document): TipoServicioDTO[] {
     const servicios: TipoServicioDTO[] = [];

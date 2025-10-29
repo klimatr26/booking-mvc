@@ -76,6 +76,8 @@ export class EasyCarSoapAdapter extends SoapClient {
     fechaFin?: string,
     edadConductor?: number
   ): Promise<VehiculoDTO[]> {
+    console.log('[Easy Car] 🔍 Parámetros recibidos:', { categoria, transmision, fechaInicio, fechaFin, edadConductor });
+    
     // IMPORTANTE: Este servicio NO acepta campos vacíos
     // Solo incluimos los campos que tienen valores
     let fields = '';
@@ -85,6 +87,8 @@ export class EasyCarSoapAdapter extends SoapClient {
     if (fechaFin) fields += `<fechaFin>${fechaFin}</fechaFin>`;
     if (edadConductor && edadConductor > 0) fields += `<edadConductor>${edadConductor}</edadConductor>`;
     
+    console.log('[Easy Car] 📝 Campos a enviar:', fields || '(ninguno)');
+    
     const soapBody = `
       <BuscarServicios xmlns="http://tuservidor.com/booking/autos">
         ${fields}
@@ -92,8 +96,22 @@ export class EasyCarSoapAdapter extends SoapClient {
     `;
 
     const envelope = this.buildSoapEnvelope(soapBody);
-    const response = await this.call(envelope, 'http://tuservidor.com/booking/autos/BuscarServicios');
-    return this.parseVehiculoList(response);
+    console.log('[Easy Car] 📤 SOAP Envelope:', envelope.substring(0, 500));
+    
+    try {
+      // Usar callRaw() para obtener XML como string
+      const rawResponse = await this.callRaw(envelope, 'http://tuservidor.com/booking/autos/BuscarServicios');
+      console.log('[Easy Car] 📄 Raw XML Response length:', rawResponse.length);
+      
+      // Contar elementos usando regex
+      const matches = rawResponse.match(/<VehiculoDTO>/g);
+      console.log('[Easy Car] 🚗 VehiculoDTO elements found:', matches ? matches.length : 0);
+      
+      return this.parseVehiculosListFromXml(rawResponse);
+    } catch (error: any) {
+      console.error('[Easy Car] ❌ Error en buscarServicios:', error.message);
+      throw error;
+    }
   }
 
   /**
@@ -216,7 +234,60 @@ export class EasyCarSoapAdapter extends SoapClient {
     return result.toLowerCase() === 'true';
   }
 
-  // ==================== Parsers ====================
+  // ==================== Parser Helpers ====================
+
+  /**
+   * Parsear lista de vehículos desde XML crudo (raw string)
+   * Usa regex para extraer elementos VehiculoDTO
+   */
+  private parseVehiculosListFromXml(xmlString: string): VehiculoDTO[] {
+    const vehiculos: VehiculoDTO[] = [];
+    
+    // Extraer todos los bloques <VehiculoDTO>...</VehiculoDTO>
+    const vehiculoRegex = /<VehiculoDTO>([\s\S]*?)<\/VehiculoDTO>/g;
+    const matches = xmlString.matchAll(vehiculoRegex);
+    
+    for (const match of matches) {
+      const vehiculoXml = match[1]; // Contenido entre <VehiculoDTO> y </VehiculoDTO>
+      
+      // Extraer valores
+      const precioStr = this.extractXmlValue(vehiculoXml, 'PrecioBaseDia');
+      console.log('[Easy Car] 💰 Precio extraído (string):', precioStr);
+      
+      const vehiculo: VehiculoDTO = {
+        IdVehiculo: parseInt(this.extractXmlValue(vehiculoXml, 'IdVehiculo') || '0'),
+        IdAgencia: parseInt(this.extractXmlValue(vehiculoXml, 'IdAgencia') || '0'),
+        Marca: this.extractXmlValue(vehiculoXml, 'Marca') || '',
+        Modelo: this.extractXmlValue(vehiculoXml, 'Modelo') || '',
+        Anio: parseInt(this.extractXmlValue(vehiculoXml, 'Anio') || '0'),
+        Categoria: this.extractXmlValue(vehiculoXml, 'Categoria') || '',
+        Transmision: this.extractXmlValue(vehiculoXml, 'Transmision') || '',
+        Combustible: this.extractXmlValue(vehiculoXml, 'Combustible') || '',
+        Activo: (this.extractXmlValue(vehiculoXml, 'Activo') || '').toLowerCase() === 'true',
+        PrecioBaseDia: parseFloat(precioStr || '0')
+      };
+      
+      console.log('[Easy Car] 💵 Precio parseado (float):', vehiculo.PrecioBaseDia);
+      vehiculos.push(vehiculo);
+    }
+    
+    console.log('[Easy Car] ✅ Parsed vehiculos:', vehiculos.length);
+    if (vehiculos.length > 0) {
+      console.log('[Easy Car] 🔍 First vehiculo:', vehiculos[0]);
+    }
+    return vehiculos;
+  }
+
+  /**
+   * Extrae el valor de un elemento XML usando regex
+   */
+  private extractXmlValue(xml: string, tagName: string): string | null {
+    const regex = new RegExp(`<${tagName}>(.*?)<\/${tagName}>`, 's');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : null;
+  }
+
+  // ==================== Parser Helpers (DOM-based - legacy) ====================
 
   private parseVehiculoList(doc: Document): VehiculoDTO[] {
     const vehiculos: VehiculoDTO[] = [];
