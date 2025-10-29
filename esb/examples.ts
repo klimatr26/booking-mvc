@@ -148,7 +148,8 @@ export async function gestionUsuariosEjemplo() {
       apellido: 'González',
       email: 'maria@example.com',
       telefono: '+593 98 888 8888',
-      activo: true
+      activo: true,
+      password: 'MariaSegura123!'
     });
     console.log(`✅ Usuario creado: ${nuevoUsuario.idUsuario}`);
 

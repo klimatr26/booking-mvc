@@ -149,7 +149,8 @@ const nuevoUsuario = await ESB.usuarios.crear({
   nombre: 'Juan',
   apellido: 'Pérez',
   email: 'juan@example.com',
-  activo: true
+  activo: true,
+  password: 'JuanSeguro123!'
 });
 ```
 

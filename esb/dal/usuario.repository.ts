@@ -10,7 +10,7 @@ export class UsuarioRepository extends BaseRepository<Usuario> {
     super(
       'idUsuario',
       'usuario',
-      ['idUsuario','nombre','apellido','email','telefono','fechaRegistro','activo']
+      ['idUsuario','nombre','apellido','email','telefono','passwordHash','fechaRegistro','activo']
     );
   }
 

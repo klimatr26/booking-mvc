@@ -1,13 +1,22 @@
 /**
  * ESB - BLL - Servicio de Usuarios
- * Lógica de negocio para gestión de usuarios
+ * Logica de negocio para gestion de usuarios
  */
 
 import { usuarioRepository } from '../dal';
 import type { Usuario } from '../models/entities';
 import { ESBLogger } from '../utils/soap-utils';
+import { createPasswordHash } from '../utils/password';
 
 const logger = ESBLogger.getInstance();
+
+export type CrearUsuarioInput = Omit<Usuario, 'idUsuario' | 'fechaRegistro' | 'passwordHash'> & {
+  password: string;
+};
+
+export type ActualizarUsuarioInput = Partial<
+  Omit<Usuario, 'passwordHash' | 'idUsuario' | 'fechaRegistro'>
+> & { password?: string };
 
 export class UsuarioService {
   async obtenerUsuarios(): Promise<Usuario[]> {
@@ -24,57 +33,69 @@ export class UsuarioService {
     return usuario;
   }
 
-  async crearUsuario(usuario: Usuario): Promise<Usuario> {
+  async crearUsuario(usuario: CrearUsuarioInput): Promise<Usuario> {
     logger.info('Creando nuevo usuario', { email: usuario.email });
-    
-    // Validaciones
+
     if (!usuario.email || !this.validarEmail(usuario.email)) {
-      throw new Error('Email inválido');
+      throw new Error('Email invalido');
     }
 
-    // Verificar que el email no exista
     const existente = await usuarioRepository.findByEmail(usuario.email);
     if (existente) {
-      throw new Error(`El email ${usuario.email} ya está registrado`);
+      throw new Error(`El email ${usuario.email} ya esta registrado`);
     }
 
+    const { password, activo, ...restoDatos } = usuario;
+    const passwordHash = createPasswordHash(password);
+
+    const datosBase = restoDatos as Omit<
+      Usuario,
+      'idUsuario' | 'fechaRegistro' | 'passwordHash' | 'activo'
+    >;
+
     const nuevoUsuario: Usuario = {
-      ...usuario,
+      ...datosBase,
+      passwordHash,
       fechaRegistro: new Date(),
-      activo: true
+      activo: activo ?? true
     };
 
     return usuarioRepository.create(nuevoUsuario);
   }
 
-  async actualizarUsuario(idUsuario: string, usuario: Partial<Usuario>): Promise<Usuario> {
+  async actualizarUsuario(idUsuario: string, usuario: ActualizarUsuarioInput): Promise<Usuario> {
     logger.info(`Actualizando usuario ${idUsuario}`);
-    
+
     const existente = await usuarioRepository.findById(idUsuario);
     if (!existente) {
       throw new Error(`Usuario con ID ${idUsuario} no encontrado`);
     }
 
-    // Si se está actualizando el email, verificar que no exista
     if (usuario.email && usuario.email !== existente.email) {
       const conMismoEmail = await usuarioRepository.findByEmail(usuario.email);
       if (conMismoEmail) {
-        throw new Error(`El email ${usuario.email} ya está en uso`);
+        throw new Error(`El email ${usuario.email} ya esta en uso`);
       }
     }
 
-    return usuarioRepository.update(idUsuario, usuario);
+    const { password, ...resto } = usuario;
+    const updatePayload: Partial<Usuario> = { ...resto };
+
+    if (password) {
+      updatePayload.passwordHash = createPasswordHash(password);
+    }
+
+    return usuarioRepository.update(idUsuario, updatePayload);
   }
 
   async eliminarUsuario(idUsuario: string): Promise<boolean> {
     logger.info(`Eliminando usuario ${idUsuario}`);
-    
+
     const usuario = await usuarioRepository.findById(idUsuario);
     if (!usuario) {
       throw new Error(`Usuario con ID ${idUsuario} no encontrado`);
     }
 
-    // Desactivar en lugar de eliminar (soft delete)
     await usuarioRepository.update(idUsuario, { activo: false });
     return true;
   }

@@ -10,6 +10,7 @@ export interface Usuario {
   apellido: string;
   email: string;
   telefono?: string;
+  passwordHash: string;
   fechaRegistro?: Date;
   activo: boolean;
 }

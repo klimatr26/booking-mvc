@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS usuario (
   "apellido"      TEXT NOT NULL,
   "email"         TEXT NOT NULL UNIQUE,
   "telefono"      TEXT,
+  "passwordHash"  TEXT NOT NULL,
   "fechaRegistro" TIMESTAMPTZ NOT NULL DEFAULT now(),
   "activo"        BOOLEAN NOT NULL
 );

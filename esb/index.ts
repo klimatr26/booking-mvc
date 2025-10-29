@@ -52,6 +52,7 @@ import { AlquilerAugyeSoapAdapter } from './gateway/alquiler-augye.adapter';
 import { getESBConfig } from './utils/config';
 import type { FiltrosBusqueda } from './models/dtos';
 import type { Usuario, Reserva, Pago } from './models/entities';
+import type { CrearUsuarioInput, ActualizarUsuarioInput } from './bll/usuario.service';
 import type {
   PreReservaRequest,
   ConfirmarReservaRequest,
@@ -130,8 +131,8 @@ export const ESB = {
   usuarios: {
     obtenerTodos: () => usuarioService.obtenerUsuarios(),
     obtenerPorId: (id: string) => usuarioService.obtenerUsuarioPorId(id),
-    crear: (usuario: Usuario) => usuarioService.crearUsuario(usuario),
-    actualizar: (id: string, usuario: Partial<Usuario>) => usuarioService.actualizarUsuario(id, usuario),
+    crear: (usuario: CrearUsuarioInput) => usuarioService.crearUsuario(usuario),
+    actualizar: (id: string, usuario: ActualizarUsuarioInput) => usuarioService.actualizarUsuario(id, usuario),
     eliminar: (id: string) => usuarioService.eliminarUsuario(id)
   },
   

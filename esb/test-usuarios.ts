@@ -1,5 +1,5 @@
 /**
- * Test de almacenamiento de Usuarios (RAM → luego DB)
+ * Test de almacenamiento de Usuarios (RAM y luego DB)
  * - Crea 2 usuarios
  * - Lista e imprime
  * - Elimina 1
@@ -8,6 +8,7 @@
 
 import type { Usuario } from './models/entities';
 import { usuarioRepository } from './dal/usuario.repository';
+import { createPasswordHash } from './utils/password';
 
 function getDataBackend(): 'memory' | 'pg' {
   const v = (process.env.DATA_BACKEND || 'memory').toLowerCase();
@@ -15,11 +16,11 @@ function getDataBackend(): 'memory' | 'pg' {
 }
 
 async function testUsuarios() {
-  console.log('👤=====================================');
+  console.log('=====================================');
   console.log('   TEST: Repositorio de Usuarios (DAL)');
   console.log('=====================================\n');
 
-  console.log('Ejecutando en: ', getDataBackend() == 'memory' ? 'RAM' : 'Base de datos PostgreSQL');
+  console.log('Ejecutando en: ', getDataBackend() === 'memory' ? 'RAM' : 'Base de datos PostgreSQL');
 
   // 1) Crear dos usuarios
   const u1: Omit<Usuario, 'idUsuario' | 'fechaRegistro'> = {
@@ -27,6 +28,7 @@ async function testUsuarios() {
     apellido: 'Pérez',
     email: 'juliana.perez@example.com',
     telefono: '+593991234567',
+    passwordHash: createPasswordHash('JulianaSegura123!'),
     activo: true
   };
 
@@ -35,6 +37,7 @@ async function testUsuarios() {
     apellido: 'Pérez',
     email: 'juan.perez@example.com',
     telefono: '+593981112223',
+    passwordHash: createPasswordHash('JuanSegura123!'),
     activo: true
   };
 
@@ -58,10 +61,10 @@ async function testUsuarios() {
   // 3) Eliminar uno de ellos
   if (!creado1.idUsuario) throw new Error('No se asignó idUsuario al primer usuario');
   const eliminado = await usuarioRepository.delete(creado1.idUsuario);
-  console.log(`\n¿Eliminado usuario ${creado1.idUsuario}?`, eliminado ? 'Sí' : 'No');
+  console.log(`\n¿Eliminado usuario ${creado1.idUsuario}?`, eliminado ? 'Si' : 'No');
 
   // 4) Conteo actual y usuarios restantes
-  const conteo = await usuarioRepository.count?.() ?? (await usuarioRepository.findAll()).length;
+  const conteo = (await usuarioRepository.count?.()) ?? (await usuarioRepository.findAll()).length;
   const todosDespues = await usuarioRepository.findAll();
 
   console.log('\nConteo actual de usuarios:', conteo);
@@ -74,7 +77,7 @@ async function testUsuarios() {
     }))
   );
 
-  // (Opcional) Demostración de helpers del repo:
+  // Helpers del repo
   const porEmail = await usuarioRepository.findByEmail('juan.perez@example.com');
   console.log('\nBúsqueda por email (juan.perez@example.com):', porEmail ? 'Encontrado' : 'No encontrado');
 
